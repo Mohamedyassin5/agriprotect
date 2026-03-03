@@ -21,4 +21,16 @@ public interface IDemandeCreditService {
     void deleteDemande(Long id);
 
     List<DemandeCreditResponseDto> getAllDemandes();
+
+    AnalyseRentabiliteResponseDto creerAnalyseRentabilite(Long demandeId, AnalyseRentabiliteCreateDto dto);
+
+    AnalyseRentabiliteResponseDto getAnalyseByDemandeId(Long demandeId);
+
+    AnalyseRentabiliteResponseDto updateAnalyseRentabilite(Long analyseId, AnalyseRentabiliteCreateDto dto);
+
+    CreditResponseDto creerCreditDepuisDemande(Long demandeId, CreationCreditDto dto);
+
+    CreditResponseDto getCreditByDemandeId(Long demandeId);
+
+    CreditResponseDto getCreditById(Long creditId);
 }

@@ -34,6 +34,9 @@ public class DemandeCredit {
     private String description;
 
     @OneToOne(mappedBy = "demandeCredit", cascade = CascadeType.ALL, orphanRemoval = true)
-    private AnalyseRentabilite analyse;
+    private AnalyseRentabilite analyseRentabilite;
+
+    @OneToOne(mappedBy = "demandeCredit", fetch = FetchType.LAZY)
+    private Credit credit;
 
 }

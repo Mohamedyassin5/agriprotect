@@ -115,4 +115,119 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
                 .description(entity.getDescription())
                 .build();
     }
+
+
+    @Override
+    @Transactional
+    public AnalyseRentabiliteResponseDto creerAnalyseRentabilite(Long demandeId, AnalyseRentabiliteCreateDto dto) {
+        DemandeCredit demande = findDemandeOrThrow(demandeId);
+
+        if (demande.getAnalyseRentabilite() != null) {
+            throw new IllegalStateException("Une analyse existe déjà pour cette demande");
+        }
+
+        if (demande.getStatut() == StatutDemande.ACCEPTEE || demande.getStatut() == StatutDemande.REFUSEE) {
+            throw new IllegalStateException("Impossible d'ajouter une analyse sur une demande déjà finalisée");
+        }
+
+        double benefice = dto.getRevenuBrut() - dto.getCoutTotal();
+
+        AnalyseRentabilite analyse = AnalyseRentabilite.builder()
+                .revenuBrut(dto.getRevenuBrut())
+                .coutTotal(dto.getCoutTotal())
+                .beneficeNet(benefice)
+                .decision(dto.getDecision())
+                .commentaire(dto.getCommentaire() != null ? dto.getCommentaire().trim() : null)
+                .dateAnalyse(LocalDateTime.now())
+                .demandeCredit(demande)
+                .analysteId(getCurrentUserId())
+                .build();
+
+        demande.setAnalyseRentabilite(analyse);
+
+        if (dto.getDecision() == DecisionCredit.ACCEPTEE) {
+            demande.setStatut(StatutDemande.ACCEPTEE);
+        } else if (dto.getDecision() == DecisionCredit.REFUSEE) {
+            demande.setStatut(StatutDemande.REFUSEE);
+        }
+
+        demandeCreditRepository.save(demande);
+
+        return mapToAnalyseResponseDto(analyse);
+    }
+
+    @Override
+    public AnalyseRentabiliteResponseDto getAnalyseByDemandeId(Long demandeId) {
+        DemandeCredit demande = findDemandeOrThrow(demandeId);
+        if (demande.getAnalyseRentabilite() == null) {
+            throw new RuntimeException("Aucune analyse de rentabilité trouvée pour la demande " + demandeId);
+        }
+        return mapToAnalyseResponseDto(demande.getAnalyseRentabilite());
+    }
+
+    private AnalyseRentabiliteResponseDto mapToAnalyseResponseDto(AnalyseRentabilite a) {
+        return AnalyseRentabiliteResponseDto.builder()
+                .id(a.getId())
+                .revenuBrut(a.getRevenuBrut())
+                .coutTotal(a.getCoutTotal())
+                .beneficeNet(a.getBeneficeNet())
+                .decision(a.getDecision())
+                .commentaire(a.getCommentaire())
+                .dateAnalyse(a.getDateAnalyse())
+                .demandeCreditId(a.getDemandeCredit().getId())
+                .analysteId(a.getAnalysteId())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public CreditResponseDto creerCreditDepuisDemande(Long demandeId, CreationCreditDto dto) {
+        DemandeCredit demande = findDemandeOrThrow(demandeId);
+
+        if (demande.getStatut() != StatutDemande.ACCEPTEE) {
+            throw new IllegalStateException("Seules les demandes ACCEPTÉES peuvent être transformées en crédit");
+        }
+
+        if (demande.getCredit() != null) {
+            throw new IllegalStateException("Un crédit existe déjà pour cette demande");
+        }
+
+        LocalDate dateFinCalculee = dto.getDateDebut().plusMonths(dto.getDureeMois());
+
+        Credit credit = Credit.builder()
+                .montant(dto.getMontant())
+                .tauxInteret(dto.getTauxInteret())
+                .dureeMois(dto.getDureeMois())
+                .dateDebut(dto.getDateDebut())
+                .dateFin(dateFinCalculee)
+                .statut(StatutCredit.DEBOURSE)
+                .agriculteurId(demande.getAgriculteurId())
+                .assuranceId(dto.getAssuranceId())
+                .demandeCredit(demande)
+                .referenceContrat("CR-" + System.currentTimeMillis())
+                .build();
+
+        demande.setCredit(credit);
+
+
+        demandeCreditRepository.save(demande);
+
+        return mapToCreditResponseDto(credit);
+    }
+
+    private CreditResponseDto mapToCreditResponseDto(Credit c) {
+        return CreditResponseDto.builder()
+                .id(c.getId())
+                .montant(c.getMontant())
+                .tauxInteret(c.getTauxInteret())
+                .dureeMois(c.getDureeMois())
+                .dateDebut(c.getDateDebut())
+                .dateFin(c.getDateFin())
+                .statut(c.getStatut())
+                .agriculteurId(c.getAgriculteurId())
+                .demandeCreditId(c.getDemandeCredit().getId())
+                .assuranceId(c.getAssuranceId())
+                .referenceContrat(c.getReferenceContrat())
+                .build();
+    }
 }

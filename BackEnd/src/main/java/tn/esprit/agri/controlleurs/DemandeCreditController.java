@@ -59,5 +59,39 @@ public class DemandeCreditController {
     public ResponseEntity<List<DemandeCreditResponseDto>> getAllDemandes() {
         return ResponseEntity.ok(demandeCreditService.getAllDemandes());
     }
+
+
+    @PostMapping("/{demandeId}/analyse-rentabilite")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<AnalyseRentabiliteResponseDto> ajouterAnalyse(
+            @PathVariable Long demandeId,
+            @Valid @RequestBody AnalyseRentabiliteCreateDto dto) {
+        return ResponseEntity.ok(demandeCreditService.creerAnalyseRentabilite(demandeId, dto));
+    }
+
+    @GetMapping("/{demandeId}/analyse-rentabilite")
+    public ResponseEntity<AnalyseRentabiliteResponseDto> getAnalyse(
+            @PathVariable Long demandeId) {
+        return ResponseEntity.ok(demandeCreditService.getAnalyseByDemandeId(demandeId));
+    }
+
+    @PostMapping("/{demandeId}/credit")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<CreditResponseDto> octroyerCredit(
+            @PathVariable Long demandeId,
+            @Valid @RequestBody CreationCreditDto dto) {
+        return ResponseEntity.ok(demandeCreditService.creerCreditDepuisDemande(demandeId, dto));
+    }
+
+    @GetMapping("/credit/{creditId}")
+    public ResponseEntity<CreditResponseDto> getCredit(@PathVariable Long creditId) {
+        return ResponseEntity.ok(demandeCreditService.getCreditById(creditId));
+    }
+
+    @GetMapping("/{demandeId}/credit")
+    public ResponseEntity<CreditResponseDto> getCreditByDemande(@PathVariable Long demandeId) {
+        return ResponseEntity.ok(demandeCreditService.getCreditByDemandeId(demandeId));
+    }
+
 }
 
