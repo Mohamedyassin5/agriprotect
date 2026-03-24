@@ -31,3 +31,32 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Python venv ###
+**/venv/
+**/env/
+**/.venv/
+**/.env/
+pyvenv.cfg
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+### Node modules ###
+node_modules/
