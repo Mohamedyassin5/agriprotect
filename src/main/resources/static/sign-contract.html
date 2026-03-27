@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signature de votre police AgriProtect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        h1 {
+            color: #2e7d32;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        canvas {
+            border: 2px solid #333;
+            background: #fff;
+            width: 100%;
+            height: 220px;
+            border-radius: 6px;
+            touch-action: none;
+            margin-top: 10px;
+        }
+        .buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        #clearBtn {
+            background: #f44336;
+            color: white;
+        }
+        #clearBtn:hover {
+            background: #d32f2f;
+        }
+        #confirmBtn {
+            background: #4CAF50;
+            color: white;
+        }
+        #confirmBtn:hover {
+            background: #388e3c;
+        }
+        #message {
+            margin-top: 25px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            min-height: 30px;
+        }
+        .success { color: #2e7d32; }
+        .error { color: #d32f2f; }
+        .info { color: #1976d2; }
+    </style>
+</head>
+<body>
+<h1>Signature électronique de votre police</h1>
+
+<label for="signatureName">Votre nom pour la signature :</label>
+<input type="text" id="signatureName" placeholder="ex: Ahmed Ben Jannet" required>
+
+<p>Tracez votre signature ci-dessous avec le doigt ou la souris :</p>
+<canvas id="signatureCanvas"></canvas>
+
+<div class="buttons">
+    <button id="clearBtn">Effacer</button>
+    <button id="confirmBtn">Valider & Signer</button>
+</div>
+
+<div id="message" class="info">Préparez votre signature...</div>
+<script>
+    // Récupération des paramètres URL
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const token = params.get('token');
+
+    if (!id || !token) {
+        document.getElementById('message').textContent = "Lien invalide ou incomplet.";
+        document.getElementById('message').className = 'error';
+    } else {
+        document.getElementById('message').textContent = "Cliquez et glissez pour dessiner votre signature.";
+        document.getElementById('message').className = 'info';
+    }
+
+    // Canvas
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Ajuste la taille du canvas pour éviter les problèmes de coordonnées
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    // Fonction pour obtenir les coordonnées correctes (souris + tactile)
+    function getCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        }
+
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    // Début du dessin
+    function startDrawing(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const pos = getCoordinates(e);
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    // Dessin en mouvement
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getCoordinates(e);
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    // Fin du dessin
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    // Événements souris
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+
+    // Événements tactile (mobile/tablette)
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+
+    // Bouton Effacer
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('message').textContent = "Canvas effacé. Dessinez à nouveau.";
+        document.getElementById('message').className = 'info';
+    });
+
+    // Bouton Valider
+    document.getElementById('confirmBtn').addEventListener('click', async () => {
+        const messageEl = document.getElementById('message');
+        const nameInput = document.getElementById('signatureName');
+        const signatureName = nameInput.value.trim();
+
+        if (!signatureName) {
+            messageEl.textContent = "Veuillez entrer votre nom.";
+            messageEl.className = 'error';
+            nameInput.focus();
+            return;
+        }
+
+        // Vérifie si le canvas est vide
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const isEmpty = imageData.every(v => v === 255 || v === 0);
+        if (isEmpty) {
+            messageEl.textContent = "Veuillez dessiner votre signature avant de valider.";
+            messageEl.className = 'error';
+            return;
+        }
+
+        messageEl.textContent = "Envoi de la signature...";
+        messageEl.className = 'info';
+
+        try {
+            const dataUrl = canvas.toDataURL('image/png');
+            const blob = await (await fetch(dataUrl)).blob();
+
+            const formData = new FormData();
+            formData.append('signatureImage', blob, 'signature.png');
+            formData.append('signatureName', signatureName);
+
+            const response = await fetch(`/agri/phase1/${id}/sign/token?token=${token}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                messageEl.textContent = "Signature validée ! Vous allez recevoir un email de confirmation.";
+                messageEl.className = 'success';
+                document.getElementById('confirmBtn').disabled = true;
+                document.getElementById('clearBtn').disabled = true;
+                nameInput.disabled = true;
+            } else {
+                const errText = await response.text();
+                messageEl.textContent = "Erreur : " + (errText || response.statusText);
+                messageEl.className = 'error';
+            }
+        } catch (err) {
+            messageEl.textContent = "Erreur réseau : " + err.message;
+            messageEl.className = 'error';
+            console.error(err);
+        }
+    });
+</script>
+</body>
+</html>
