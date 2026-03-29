@@ -7,4 +7,8 @@ public interface EmailService {
     void sendContractToSignEmail(Insurance insurance);
     void sendActivationAndFirstPaymentEmail(Insurance insurance);
     void sendPaymentConfirmationEmail(Insurance insurance);
+    void sendOverdueNotification(Insurance insurance);
+    void sendPaymentReminder(Insurance insurance, String daysLeft);
+    // Dans l'interface EmailService
+    void sendCoverageSuspendedEmail(Insurance insurance);
 }

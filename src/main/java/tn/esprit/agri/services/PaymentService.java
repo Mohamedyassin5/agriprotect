@@ -20,4 +20,7 @@ public interface PaymentService {
      * Récupère les détails d'un PaymentIntent (optionnel)
      */
     String getPaymentStatus(String paymentIntentId);
+    void applyPenaltyIfOverdue(String insuranceId);
+    void regularizePayment(String insuranceId, String userId);
+
 }

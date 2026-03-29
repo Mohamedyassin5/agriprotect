@@ -17,4 +17,5 @@ public interface IInsuranceService {
      * Signe la police et la passe à ACTIVE
      */
     Insurance signInsurance(String insuranceId, String userId, SignRequestDTO dto);
+    String getUserInsuranceContext(String userId);
 }
