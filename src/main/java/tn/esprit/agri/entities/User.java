@@ -77,6 +77,13 @@ public class User implements UserDetails {
     @JsonManagedReference
     private Set<Crop> crops = new HashSet<>();
 
+    @Lob
+    @Column(name = "face_ref_image", columnDefinition = "LONGBLOB")
+    private byte[] faceRefImage;
+
+    @Column(name = "face_enabled", nullable = false)
+    private boolean faceEnabled = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) return List.of();

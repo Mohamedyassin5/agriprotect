@@ -3,6 +3,7 @@ package tn.esprit.agri.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -10,9 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import tn.esprit.agri.security.JwtAuthenticationFilter;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import tn.esprit.agri.security.JwtAuthenticationFilter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -32,16 +32,42 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+        return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/agri/auth/**", "/agri/users", "/agri/crops/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
+                        // Public auth endpoints
+                        .requestMatchers(
+                                "/agri/auth/login",
+                                "/agri/auth/forgot-password",
+                                "/agri/auth/reset-password",
+                                "/agri/auth/face/login",
+                                "/agri/assistant/health"
+                        ).permitAll()
+                        
+                        // Enforce authentication for face enrollment (redundant with anyRequest().authenticated() but explicit is better)
+                        .requestMatchers("/agri/auth/face/enroll").authenticated()
+
+                        // Public register ONLY (POST /agri/users)
+                        .requestMatchers(HttpMethod.POST, "/agri/users").permitAll()
+
+                        // Swagger / docs
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/h2-console/**"
+                        ).permitAll()
+
+                        // If you want AI recommend public (optional)
+                        .requestMatchers(HttpMethod.POST, "/agri/crops/recommend").permitAll()
+
+                        // Everything else requires JWT
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
-        return http.build();
+                // for H2 console frames
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .build();
     }
 }
+

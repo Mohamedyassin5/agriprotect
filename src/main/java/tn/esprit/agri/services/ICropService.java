@@ -11,4 +11,5 @@ public interface ICropService {
     List<Crop> getAllCrops();
     Crop updateCrop(String cropId, Crop cropDetails);
     void deleteCrop(String cropId);
+    List<Crop> searchByKeyword(String keyword);
 }

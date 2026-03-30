@@ -3,7 +3,12 @@ package tn.esprit.agri.controlleurs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import tn.esprit.agri.controlleurs.auth.dto.ChangePasswordRequest;
+import tn.esprit.agri.controlleurs.user.dto.RegisterRequest;
+import tn.esprit.agri.controlleurs.user.dto.UpdateUserRequest;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.services.IUserService;
 
@@ -18,29 +23,33 @@ public class UserController {
 
     private final IUserService userService;
 
-    /**
-     * Create a new user
-     * @param user the user object to create
-     * @return ResponseEntity with created user and HTTP 201 status
-     */
+
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<?> createUser(@Valid @RequestBody RegisterRequest req) {
         try {
-            if (userService.emailExists(user.getEmail())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            if (userService.emailExists(req.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
             }
+
+            User user = User.builder()
+                    .email(req.getEmail())
+                    .password(req.getPassword())
+                    .firstName(req.getFirstName())
+                    .lastName(req.getLastName())
+                    .phoneNumber(req.getPhoneNumber())
+                    .address(req.getAddress())
+                    .build();
+
             User createdUser = userService.createUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error");
         }
     }
 
-    /**
-     * Get a user by ID
-     * @param id the user ID
-     * @return ResponseEntity with user data or 404 if not found
-     */
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable String id) {
         Optional<User> user = userService.getUserById(id);
@@ -48,25 +57,24 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    /**
-     * Get all users
-     * @return ResponseEntity with list of all users
-     */
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * Update an existing user
-     * @param id the user ID
-     * @param userDetails the updated user data
-     * @return ResponseEntity with updated user or 404 if not found
-     */
+
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User userDetails) {
+    public ResponseEntity<?> updateUser(@PathVariable String id, @Valid @RequestBody UpdateUserRequest req) {
         try {
+            User userDetails = new User();
+            userDetails.setFirstName(req.getFirstName());
+            userDetails.setLastName(req.getLastName());
+            userDetails.setPhoneNumber(req.getPhoneNumber());
+            userDetails.setAddress(req.getAddress());
+            userDetails.setScore(req.getScore());
+
             Optional<User> updatedUser = userService.updateUser(id, userDetails);
             return updatedUser.map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
@@ -75,11 +83,7 @@ public class UserController {
         }
     }
 
-    /**
-     * Delete a user by ID
-     * @param id the user ID
-     * @return ResponseEntity with 204 No Content if successful, 404 if not found
-     */
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         boolean deleted = userService.deleteUser(id);
@@ -90,14 +94,38 @@ public class UserController {
         }
     }
 
-    /**
-     * Check if email exists
-     * @param email the email to check
-     * @return ResponseEntity with boolean result
-     */
+
     @GetMapping("/email/{email}/exists")
     public ResponseEntity<Boolean> checkEmailExists(@PathVariable String email) {
         boolean exists = userService.emailExists(email);
         return ResponseEntity.ok(exists);
+    }
+
+
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(@RequestParam String keyword) {
+        List<User> users = userService.searchByName(keyword);
+        return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changeMyPassword(@Valid @RequestBody ChangePasswordRequest request,
+                                              Authentication authentication) {
+        try {
+            // 1) confirm new password
+            if (request.getNewPassword() == null || request.getConfirmNewPassword() == null
+                    || !request.getNewPassword().equals(request.getConfirmNewPassword())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Passwords do not match");
+            }
+
+            String email = authentication.getName(); // from JWT subject
+            userService.changePassword(email, request.getOldPassword(), request.getNewPassword());
+
+            return ResponseEntity.ok("Password changed successfully. Please login again.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error");
+        }
     }
 }

@@ -32,31 +32,35 @@ build/
 ### VS Code ###
 .vscode/
 
-### Python venv ###
+### Python virtual environments ###
+**/.venv/
 **/venv/
 **/env/
-**/.venv/
 **/.env/
-pyvenv.cfg
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.installed.cfg
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+**/pyvenv.cfg
+
+### Python cache ###
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+### ML Model files (large binary files) ###
+src/main/resources/ai_service/crop_ai.saved_models/*.pkl
+
+### Face service - junk/temp files ###
+src/main/resources/face-service/0.3.0
+src/main/resources/face-service/0.8
+src/main/resources/face-service/4.8.0
+src/main/resources/face-service/7.0
+src/main/resources/face-service/24.0
+src/main/resources/face-service/cd
+src/main/resources/face-service/py
+src/main/resources/face-service/uvicorn)
 
 ### Node modules ###
 node_modules/
+
+### OS files ###
+.DS_Store
+Thumbs.db

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.repositories.UserRepository;
 import tn.esprit.agri.services.IUserService;
+import tn.esprit.agri.utils.PasswordValidator;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,10 +31,23 @@ public class UserServiceImpl implements IUserService {
         if (user.getScore() == null) {
             user.setScore(50.0f);
         }
-        // encode password before saving
-        if (user.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // validate password
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("Password is required");
         }
+
+        String trimmed = user.getPassword().trim();
+
+        if (!PasswordValidator.isStrong(trimmed)) {
+            throw new RuntimeException(
+                    "Password must be at least 8 characters and include uppercase, lowercase, number, and special character (@$!%*?&._#-)"
+            );
+        }
+
+        // encode password
+        user.setPassword(passwordEncoder.encode(trimmed));
+
         return userRepository.save(user);
     }
 
@@ -60,9 +74,6 @@ public class UserServiceImpl implements IUserService {
         return userRepository.findById(id).map(user -> {
             if (userDetails.getEmail() != null) {
                 user.setEmail(userDetails.getEmail());
-            }
-            if (userDetails.getPassword() != null) {
-                user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
             }
             if (userDetails.getFirstName() != null) {
                 user.setFirstName(userDetails.getFirstName());
@@ -108,5 +119,53 @@ public class UserServiceImpl implements IUserService {
     @Transactional(readOnly = true)
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> searchByName(String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return userRepository.findAll();
+        }
+
+        return userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                        keyword,
+                        keyword
+                );
+    }
+
+    @Override
+    public void changePassword(String email, String oldPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 1) verify old password (BCrypt)
+        if (oldPassword == null || !passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
+
+        // 2) validate new password
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new RuntimeException("New password is required");
+        }
+
+        String trimmedNew = newPassword.trim();
+
+        // 3) new password must be strong
+        if (!PasswordValidator.isStrong(trimmedNew)) {
+            throw new RuntimeException(
+                    "Password must be at least 8 characters and include uppercase, lowercase, number, and special character (@$!%*?&._#-)"
+            );
+        }
+
+        // 4) new password must be different from old password
+        if (passwordEncoder.matches(trimmedNew, user.getPassword())) {
+            throw new RuntimeException("New password must be different from old password");
+        }
+
+        // 5) save encoded new password
+        user.setPassword(passwordEncoder.encode(trimmedNew));
+        userRepository.save(user);
     }
 }

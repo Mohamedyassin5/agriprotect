@@ -7,4 +7,9 @@ import java.util.List;
 
 public interface CropRepository extends JpaRepository<Crop, String> {
     List<Crop> findByUserId(String userId);
+    
+    List<Crop> findByCropTypeContainingIgnoreCaseOrTypeterresContainingIgnoreCase(
+            String cropType,
+            String typeterres
+    );
 }
