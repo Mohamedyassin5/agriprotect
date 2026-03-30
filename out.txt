@@ -1,0 +1,630 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< tn.esprit:agri >---------------------------
+[INFO] Building agri 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ agri ---
+[INFO] Deleting C:\Users\amine\agriprotect\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ agri ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ agri ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 58 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/config/SecurityConfig.java:[21,43] variable jwtAuthenticationFilter not initialized in the default constructor
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[27,70] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[37,71] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[43,77] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[54,74] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/entities/User.java:[28,8] tn.esprit.agri.entities.User is not abstract and does not override abstract method getPassword() in org.springframework.security.core.userdetails.UserDetails
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[39,25] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[75,85] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[81,36] cannot find symbol
+  symbol:   method getFarmer()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[81,79] cannot find symbol
+  symbol:   method getFarmer()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[79,33] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.controlleurs.IndemnisationController.PendingRequestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[80,28] cannot find symbol
+  symbol:   method getId()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[82,34] cannot find symbol
+  symbol:   method getFund()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[83,32] cannot find symbol
+  symbol:   method getRequestedAmount()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[84,32] cannot find symbol
+  symbol:   method getRequestReason()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[85,30] cannot find symbol
+  symbol:   method getRequestDate()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[86,33] cannot find symbol
+  symbol:   method getAiScore()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[87,36] cannot find symbol
+  symbol:   method getAiAnalysis()
+  location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[32,17] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[33,45] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[34,25] cannot find symbol
+  symbol:   method setTest(tn.esprit.agri.entities.QcmTest)
+  location: variable question of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[63,43] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[87,73] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[90,27] cannot find symbol
+  symbol:   method isPassed()
+  location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[91,27] cannot find symbol
+  symbol:   method getDiscountValidUntil()
+  location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[92,28] cannot find symbol
+  symbol:   method getDiscountValidUntil()
+  location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[100,25] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[102,34] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[104,45] cannot find symbol
+  symbol:   method getId()
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[107,22] cannot find symbol
+  symbol:   method getCorrectAnswer()
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[113,44] cannot find symbol
+  symbol:   method getRequiredScore()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[118,49] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[134,21] cannot find symbol
+  symbol:   method getFund()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[137,39] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[138,37] cannot find symbol
+  symbol:   method getFund()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[142,31] cannot find symbol
+  symbol:   method setDiscountPercentage(double)
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[154,52] cannot find symbol
+  symbol:   method getRequiredScore()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[76,41] cannot find symbol
+  symbol:   method getName()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[77,47] cannot find symbol
+  symbol:   method getNumeroFond()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[78,48] cannot find symbol
+  symbol:   method getCultureType()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[79,45] cannot find symbol
+  symbol:   method getMinScore()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[80,48] cannot find symbol
+  symbol:   method getPrimeAmount()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[81,51] cannot find symbol
+  symbol:   method getCurrentBalance()
+  location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[108,54] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[33,18] cannot find symbol
+  symbol:   method getRole()
+  location: variable admin of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[40,103] cannot find symbol
+  symbol:   method getName()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[41,21] cannot find symbol
+  symbol:   method getCultureType()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[51,13] cannot find symbol
+  symbol:   method setMinScore(int)
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[56,24] cannot find symbol
+  symbol:   method getName()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[56,47] cannot find symbol
+  symbol:   method getCultureType()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[62,41] cannot find symbol
+  symbol:   method getScore()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[62,60] cannot find symbol
+  symbol:   method getMinScore()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[63,69] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[64,83] cannot find symbol
+  symbol:   method getCultureType()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[75,13] cannot find symbol
+  symbol:   method setCreatedBy(tn.esprit.agri.entities.User)
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[76,13] cannot find symbol
+  symbol:   method setStatus(tn.esprit.agri.entities.enums.FundStatus)
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[77,13] cannot find symbol
+  symbol:   method setCreationDate(java.time.LocalDateTime)
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[78,13] cannot find symbol
+  symbol:   method setCurrentBalance(double)
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[86,67] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[94,50] cannot find symbol
+  symbol:   method getPrimeAmount()
+  location: variable savedFund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[87,77] cannot find symbol
+  symbol:   method getId()
+  location: variable savedFund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[87,58] cannot find symbol
+  symbol:   method getId()
+  location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[119,38] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.dto.SolidarityFundResponse
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[120,25] cannot find symbol
+  symbol:   method getId()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[121,27] cannot find symbol
+  symbol:   method getName()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[122,33] cannot find symbol
+  symbol:   method getNumeroFond()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[123,40] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[123,70] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[132,31] cannot find symbol
+  symbol:   method getRole()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[133,32] cannot find symbol
+  symbol:   method getRole()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[135,43] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[145,17] constructor FarmerSolidarityFundId in class tn.esprit.agri.entities.FarmerSolidarityFundId cannot be applied to given types;
+  required: no arguments
+  found:    java.lang.String,java.lang.String
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[149,23] cannot find symbol
+  symbol:   method getStatus()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[155,23] cannot find symbol
+  symbol:   method getLastPaymentDate()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[156,27] cannot find symbol
+  symbol:   method getLastPaymentDate()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[157,27] cannot find symbol
+  symbol:   method getLastPaymentDate()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[164,37] cannot find symbol
+  symbol:   method getDiscountPercentage()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[164,82] cannot find symbol
+  symbol:   method getDiscountPercentage()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[165,39] cannot find symbol
+  symbol:   method getCurrentPrimeAmount()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[168,44] cannot find symbol
+  symbol:   method getMonthsPaid()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[169,43] cannot find symbol
+  symbol:   method getTotalPaid()
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[170,36] cannot find symbol
+  symbol:   method getCurrentBalance()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[171,19] cannot find symbol
+  symbol:   method setLastPaymentDate(java.time.LocalDate)
+  location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,61] cannot find symbol
+  symbol:   method getFundId()
+  location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,78] cannot find symbol
+  symbol:   method getTitle()
+  location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,94] cannot find symbol
+  symbol:   method getRequiredScore()
+  location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[30,24] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[57,65] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[28,17] cannot find symbol
+  symbol:   method getTest()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[33,31] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[44,14] cannot find symbol
+  symbol:   method setId(java.lang.String)
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[45,14] cannot find symbol
+  symbol:   method setTest(tn.esprit.agri.entities.QcmTest)
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[47,13] cannot find symbol
+  symbol:   method setQuestions(java.util.List<tn.esprit.agri.entities.QcmQuestion>)
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[55,20] cannot find symbol
+  symbol:   method getTest()
+  location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[73,43] cannot find symbol
+  symbol:   method getQuestions()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[76,51] cannot find symbol
+  symbol:   method getId()
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[77,45] cannot find symbol
+  symbol:   method getCorrectAnswer()
+  location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[89,49] cannot find symbol
+  symbol:   method getRequiredScore()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[91,49] cannot find symbol
+  symbol:   method builder()
+  location: class tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[104,68] cannot find symbol
+  symbol:   method getFund()
+  location: variable test of type tn.esprit.agri.entities.QcmTest
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.448 s
+[INFO] Finished at: 2026-03-26T14:48:52+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project agri: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/config/SecurityConfig.java:[21,43] variable jwtAuthenticationFilter not initialized in the default constructor
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[27,70] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[37,71] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[43,77] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/ComplaintController.java:[54,74] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/entities/User.java:[28,8] tn.esprit.agri.entities.User is not abstract and does not override abstract method getPassword() in org.springframework.security.core.userdetails.UserDetails
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[39,25] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[75,85] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[81,36] cannot find symbol
+[ERROR]   symbol:   method getFarmer()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[81,79] cannot find symbol
+[ERROR]   symbol:   method getFarmer()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[79,33] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.controlleurs.IndemnisationController.PendingRequestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[80,28] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[82,34] cannot find symbol
+[ERROR]   symbol:   method getFund()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[83,32] cannot find symbol
+[ERROR]   symbol:   method getRequestedAmount()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[84,32] cannot find symbol
+[ERROR]   symbol:   method getRequestReason()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[85,30] cannot find symbol
+[ERROR]   symbol:   method getRequestDate()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[86,33] cannot find symbol
+[ERROR]   symbol:   method getAiScore()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/IndemnisationController.java:[87,36] cannot find symbol
+[ERROR]   symbol:   method getAiAnalysis()
+[ERROR]   location: variable request of type tn.esprit.agri.entities.IndemnisationRequest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[32,17] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[33,45] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[34,25] cannot find symbol
+[ERROR]   symbol:   method setTest(tn.esprit.agri.entities.QcmTest)
+[ERROR]   location: variable question of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[63,43] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[87,73] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[90,27] cannot find symbol
+[ERROR]   symbol:   method isPassed()
+[ERROR]   location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[91,27] cannot find symbol
+[ERROR]   symbol:   method getDiscountValidUntil()
+[ERROR]   location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[92,28] cannot find symbol
+[ERROR]   symbol:   method getDiscountValidUntil()
+[ERROR]   location: variable lastResult of type tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[100,25] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[102,34] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[104,45] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[107,22] cannot find symbol
+[ERROR]   symbol:   method getCorrectAnswer()
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[113,44] cannot find symbol
+[ERROR]   symbol:   method getRequiredScore()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[118,49] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[134,21] cannot find symbol
+[ERROR]   symbol:   method getFund()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[137,39] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[138,37] cannot find symbol
+[ERROR]   symbol:   method getFund()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[142,31] cannot find symbol
+[ERROR]   symbol:   method setDiscountPercentage(double)
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/QcmController.java:[154,52] cannot find symbol
+[ERROR]   symbol:   method getRequiredScore()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[76,41] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[77,47] cannot find symbol
+[ERROR]   symbol:   method getNumeroFond()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[78,48] cannot find symbol
+[ERROR]   symbol:   method getCultureType()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[79,45] cannot find symbol
+[ERROR]   symbol:   method getMinScore()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[80,48] cannot find symbol
+[ERROR]   symbol:   method getPrimeAmount()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[81,51] cannot find symbol
+[ERROR]   symbol:   method getCurrentBalance()
+[ERROR]   location: variable fundDetails of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/SolidarityFundController.java:[108,54] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[33,18] cannot find symbol
+[ERROR]   symbol:   method getRole()
+[ERROR]   location: variable admin of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[40,103] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[41,21] cannot find symbol
+[ERROR]   symbol:   method getCultureType()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[51,13] cannot find symbol
+[ERROR]   symbol:   method setMinScore(int)
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[56,24] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[56,47] cannot find symbol
+[ERROR]   symbol:   method getCultureType()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[62,41] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[62,60] cannot find symbol
+[ERROR]   symbol:   method getMinScore()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[63,69] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[64,83] cannot find symbol
+[ERROR]   symbol:   method getCultureType()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[75,13] cannot find symbol
+[ERROR]   symbol:   method setCreatedBy(tn.esprit.agri.entities.User)
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[76,13] cannot find symbol
+[ERROR]   symbol:   method setStatus(tn.esprit.agri.entities.enums.FundStatus)
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[77,13] cannot find symbol
+[ERROR]   symbol:   method setCreationDate(java.time.LocalDateTime)
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[78,13] cannot find symbol
+[ERROR]   symbol:   method setCurrentBalance(double)
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[86,67] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[94,50] cannot find symbol
+[ERROR]   symbol:   method getPrimeAmount()
+[ERROR]   location: variable savedFund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[87,77] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable savedFund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[87,58] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable farmer of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[119,38] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.dto.SolidarityFundResponse
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[120,25] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[121,27] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[122,33] cannot find symbol
+[ERROR]   symbol:   method getNumeroFond()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[123,40] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[123,70] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[132,31] cannot find symbol
+[ERROR]   symbol:   method getRole()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[133,32] cannot find symbol
+[ERROR]   symbol:   method getRole()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[135,43] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[145,17] constructor FarmerSolidarityFundId in class tn.esprit.agri.entities.FarmerSolidarityFundId cannot be applied to given types;
+[ERROR]   required: no arguments
+[ERROR]   found:    java.lang.String,java.lang.String
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[149,23] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[155,23] cannot find symbol
+[ERROR]   symbol:   method getLastPaymentDate()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[156,27] cannot find symbol
+[ERROR]   symbol:   method getLastPaymentDate()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[157,27] cannot find symbol
+[ERROR]   symbol:   method getLastPaymentDate()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[164,37] cannot find symbol
+[ERROR]   symbol:   method getDiscountPercentage()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[164,82] cannot find symbol
+[ERROR]   symbol:   method getDiscountPercentage()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[165,39] cannot find symbol
+[ERROR]   symbol:   method getCurrentPrimeAmount()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[168,44] cannot find symbol
+[ERROR]   symbol:   method getMonthsPaid()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[169,43] cannot find symbol
+[ERROR]   symbol:   method getTotalPaid()
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[170,36] cannot find symbol
+[ERROR]   symbol:   method getCurrentBalance()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/impl/SolidarityFundService.java:[171,19] cannot find symbol
+[ERROR]   symbol:   method setLastPaymentDate(java.time.LocalDate)
+[ERROR]   location: variable membership of type tn.esprit.agri.entities.FarmerSolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,61] cannot find symbol
+[ERROR]   symbol:   method getFundId()
+[ERROR]   location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,78] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[29,94] cannot find symbol
+[ERROR]   symbol:   method getRequiredScore()
+[ERROR]   location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[30,24] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable dto of type tn.esprit.agri.controlleurs.TestController.CreateTestDTO
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/controlleurs/TestController.java:[57,65] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type tn.esprit.agri.entities.User
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[28,17] cannot find symbol
+[ERROR]   symbol:   method getTest()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[33,31] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[44,14] cannot find symbol
+[ERROR]   symbol:   method setId(java.lang.String)
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[45,14] cannot find symbol
+[ERROR]   symbol:   method setTest(tn.esprit.agri.entities.QcmTest)
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[47,13] cannot find symbol
+[ERROR]   symbol:   method setQuestions(java.util.List<tn.esprit.agri.entities.QcmQuestion>)
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[55,20] cannot find symbol
+[ERROR]   symbol:   method getTest()
+[ERROR]   location: variable fund of type tn.esprit.agri.entities.SolidarityFund
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[73,43] cannot find symbol
+[ERROR]   symbol:   method getQuestions()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[76,51] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[77,45] cannot find symbol
+[ERROR]   symbol:   method getCorrectAnswer()
+[ERROR]   location: variable q of type tn.esprit.agri.entities.QcmQuestion
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[89,49] cannot find symbol
+[ERROR]   symbol:   method getRequiredScore()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[91,49] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class tn.esprit.agri.entities.FarmerQcmResult
+[ERROR] /C:/Users/amine/agriprotect/src/main/java/tn/esprit/agri/services/TestService.java:[104,68] cannot find symbol
+[ERROR]   symbol:   method getFund()
+[ERROR]   location: variable test of type tn.esprit.agri.entities.QcmTest
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
