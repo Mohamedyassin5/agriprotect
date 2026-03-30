@@ -5,6 +5,8 @@ import lombok.*;
 import tn.esprit.agri.entities.enums.StatutCredit;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter

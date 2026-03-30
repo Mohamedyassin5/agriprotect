@@ -1,6 +1,14 @@
 package tn.esprit.agri.services;
 
+import tn.esprit.agri.DTO.AnalyseDTO.AnalyseRentabiliteCreateDto;
+import tn.esprit.agri.DTO.AnalyseDTO.AnalyseRentabiliteResponseDto;
+import tn.esprit.agri.DTO.AnalyseDTO.CreditScoringDto;
+import tn.esprit.agri.DTO.AnalyseDTO.DemandeAnalysisReportDto;
+import tn.esprit.agri.DTO.CreditDTO.CreationCreditDto;
+import tn.esprit.agri.DTO.CreditDTO.CreditResponseDto;
 import tn.esprit.agri.DTO.DemandeDTO.CreationDemandeCreditDto;
+import tn.esprit.agri.DTO.DemandeDTO.DecisionFinaleDto;
+import tn.esprit.agri.DTO.DemandeDTO.DemandeCreditFilterDto;
 import tn.esprit.agri.DTO.DemandeDTO.DemandeCreditResponseDto;
 import tn.esprit.agri.DTO.DemandeDTO.UpdateDemandeCreditDto;
 
@@ -21,6 +29,7 @@ public interface IDemandeCreditService {
     void deleteDemande(Long id);
 
     List<DemandeCreditResponseDto> getAllDemandes();
+    List<DemandeCreditResponseDto> getDemandesFiltered(DemandeCreditFilterDto filterDto);
 
     AnalyseRentabiliteResponseDto creerAnalyseRentabilite(Long demandeId, AnalyseRentabiliteCreateDto dto);
 
@@ -33,4 +42,16 @@ public interface IDemandeCreditService {
     CreditResponseDto getCreditByDemandeId(Long demandeId);
 
     CreditResponseDto getCreditById(Long creditId);
+
+    DemandeCreditResponseDto startInstruction(Long demandeId, Long actorId);
+
+    DemandeCreditResponseDto finaliserDecision(Long demandeId, DecisionFinaleDto dto);
+
+    DemandeCreditResponseDto archiveDemande(Long demandeId, Long actorId);
+
+    DemandeCreditResponseDto cancelDemande(Long demandeId, Long actorId);
+
+    CreditScoringDto scoreDemande(Long demandeId);
+
+    DemandeAnalysisReportDto buildDemandeReport(Long demandeId);
 }

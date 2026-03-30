@@ -40,4 +40,11 @@ public class AnalyseRentabilite {
     private DemandeCredit demandeCredit;
 
     private Long analysteId;
+
+    private Double scoreRevenueStability;
+    private Double scoreDebtRatio;
+    private Double scoreProjectRisk;
+    private Double scoreHistory;
+    private Double scoreFinal;
+    private String recommendation;
 }

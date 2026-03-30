@@ -25,6 +25,7 @@ public class Echeance {
     private Double montantDu; 
 
     @Column(nullable = false)
+    @Builder.Default
     private Double montantPaye = 0.0; 
 
     @Enumerated(EnumType.STRING)
@@ -36,6 +37,11 @@ public class Echeance {
     private Double assuranceDu;
 
     private LocalDate datePaiementEffectif; 
+    private String referencePaiement;
+    @Builder.Default
+    private Integer joursRetard = 0;
+    @Builder.Default
+    private Double penalite = 0.0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "credit_id", nullable = false)

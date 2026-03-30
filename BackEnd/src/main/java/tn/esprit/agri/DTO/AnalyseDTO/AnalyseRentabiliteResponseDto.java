@@ -19,4 +19,6 @@ public class AnalyseRentabiliteResponseDto {
     private LocalDateTime dateAnalyse;
     private Long demandeCreditId;
     private Long analysteId;
+    private Double scoreFinal;
+    private String recommendation;
 }

@@ -18,6 +18,9 @@ public class EcheanceResponseDto {
     private Double interetsDu;
     private Double assuranceDu;
     private LocalDate datePaiementEffectif;
+    private String referencePaiement;
+    private Integer joursRetard;
+    private Double penalite;
     private Integer numeroEcheance;
     private Long creditId;
 }

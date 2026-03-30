@@ -5,6 +5,7 @@ import lombok.*;
 import tn.esprit.agri.entities.enums.StatutDemande;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -38,5 +39,9 @@ public class DemandeCredit {
 
     @OneToOne(mappedBy = "demandeCredit", fetch = FetchType.LAZY)
     private Credit credit;
+
+    private LocalDateTime instructionAt;
+    private LocalDateTime decisionAt;
+    private Long updatedBy;
 
 }
