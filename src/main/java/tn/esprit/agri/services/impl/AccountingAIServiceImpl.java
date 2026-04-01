@@ -224,6 +224,23 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                 "Basé sur %d écritures REVENUS et %d écritures DÉPENSES réelles entre le %s et le %s (moyenne sur 3 mois)",
                 incomeEntries, expenseEntries, threeMonthsAgo, now);
 
+        // Catégories essentielles agricoles — réductions agressives = risque réel
+        Set<EntryCategory> essentialCategories = Set.of(
+                EntryCategory.SEEDS, EntryCategory.FERTILIZER, EntryCategory.IRRIGATION);
+
+        List<String> feasibilityWarnings = new ArrayList<>();
+
+        // Vérifier la faisabilité de la hausse de revenus demandée
+        if (request.getIncomeChangePercent() != null) {
+            double incChange = request.getIncomeChangePercent();
+            if (incChange > 50)
+                feasibilityWarnings.add(String.format(
+                        "Hausse des revenus de +%.0f%% : très optimiste — aucune base historique ne justifie une telle augmentation.", incChange));
+            else if (incChange > 25)
+                feasibilityWarnings.add(String.format(
+                        "Hausse des revenus de +%.0f%% : ambitieux — à valider avec des données concrètes (nouveaux marchés, cultures).", incChange));
+        }
+
         // Apply income change
         BigDecimal simulatedIncome = monthlyIncome;
         if (request.getIncomeChangePercent() != null) {
@@ -251,6 +268,36 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
             BigDecimal simulated = catMonthly.multiply(
                     BigDecimal.ONE.add(BigDecimal.valueOf(changePct / 100))).setScale(2, RoundingMode.HALF_UP);
 
+            // --- Évaluation de la faisabilité par catégorie ---
+            String feasibility = "REALISTIC";
+            if (changePct != 0) {
+                if (catMonthly.compareTo(BigDecimal.ZERO) == 0) {
+                    feasibility = "NO_DATA";
+                    feasibilityWarnings.add(String.format(
+                            "%s : aucune dépense historique dans cette catégorie — simulation sans base réelle.", category));
+                } else if (changePct >= 100) {
+                    feasibility = "UNREALISTIC";
+                    feasibilityWarnings.add(String.format(
+                            "%s : hausse de +%.0f%% irréaliste — aucune base concrète ne justifie un doublement ou plus de ces dépenses.", category, changePct));
+                } else if (changePct >= 50) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s : hausse de +%.0f%% très agressive — à justifier par un investissement ou une expansion concrète.", category, changePct));
+                } else if (changePct <= -50) {
+                    feasibility = "UNREALISTIC";
+                    feasibilityWarnings.add(String.format(
+                            "%s : réduction de %.0f%% irréaliste — il est impossible de supprimer plus de la moitié de ces dépenses.", category, Math.abs(changePct)));
+                } else if (changePct <= -30 && essentialCategories.contains(category)) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s est une dépense essentielle agricole — une réduction de %.0f%% risque d'impacter directement la production.", category, Math.abs(changePct)));
+                } else if (changePct <= -25) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s : réduction de %.0f%% agressive — difficile à tenir sur plusieurs mois.", category, Math.abs(changePct)));
+                }
+            }
+
             if (catMonthly.compareTo(BigDecimal.ZERO) > 0 || changePct != 0) {
                 String formula;
                 if (changePct == 0) {
@@ -269,6 +316,7 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                         .simulatedAmount(simulated)
                         .changePercent(changePct)
                         .formula(formula)
+                        .feasibility(feasibility)
                         .build());
             }
 
@@ -314,6 +362,7 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                 .simulatedNetIncome(simulatedNet)
                 .netImpact(netImpact)
                 .verdict(verdict)
+                .feasibilityWarnings(feasibilityWarnings)
                 .categoryImpacts(categoryImpacts)
                 .monthlyProjections(projections)
                 .build();

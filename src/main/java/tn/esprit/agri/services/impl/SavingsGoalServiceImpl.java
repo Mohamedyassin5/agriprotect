@@ -128,15 +128,12 @@ public class SavingsGoalServiceImpl implements ISavingsGoalService {
     public SavingsGoal updateGoalPriority(String goalId, GoalPriorityRequest request) {
         SavingsGoal goal = getGoalById(goalId);
 
-        if (request.getPriority() != null) {
-            if (request.getPriority() < 0)
-                throw new IllegalArgumentException("La priorité doit être >= 0 (0 = automatique).");
-            goal.setPriority(request.getPriority());
-        }
-
-        if (request.isResetToAuto()) {
+        if (Boolean.TRUE.equals(request.getResetToAuto())) {
+            // Réinitialisation complète : tout en automatique proportionnel
             goal.setCustomAllocationPercentage(null);
+            goal.setPriority(0);
         } else if (request.getCustomAllocationPercentage() != null) {
+            // Mode CUSTOM_PERCENTAGE : efface la priorité (mutuellement exclusif)
             if (request.getCustomAllocationPercentage().compareTo(BigDecimal.ZERO) < 0
                     || request.getCustomAllocationPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
                 throw new IllegalArgumentException("Le pourcentage doit être entre 0 et 100.");
@@ -144,6 +141,13 @@ public class SavingsGoalServiceImpl implements ISavingsGoalService {
             validateCustomAllocationPercentage(goal.getSavingsAccount().getId(), goalId,
                     request.getCustomAllocationPercentage());
             goal.setCustomAllocationPercentage(request.getCustomAllocationPercentage());
+            goal.setPriority(0); // priorité incompatible avec % fixe
+        } else if (request.getPriority() != null) {
+            // Mode PRIORITY ou AUTO : efface le % fixe (mutuellement exclusif)
+            if (request.getPriority() < 0)
+                throw new IllegalArgumentException("La priorité doit être >= 0 (0 = automatique).");
+            goal.setPriority(request.getPriority());
+            goal.setCustomAllocationPercentage(null); // % fixe incompatible avec priorité
         }
 
         goalRepository.save(goal);

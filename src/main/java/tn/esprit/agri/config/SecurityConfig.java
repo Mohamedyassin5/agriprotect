@@ -36,6 +36,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/", "/index.html", "/sign-contract.html", "/payment.html",
+                                "/payment-success.html", "/payment-cancel.html","/regularize-payment.html",
+                                "/swagger-ui/**", "/v3/api-docs/**",
+                                "/agri/auth/**", "/stripe/webhook"
+                        ).permitAll()
                         // Public auth endpoints
                         .requestMatchers(
                                 "/agri/auth/login",
@@ -44,7 +50,15 @@ public class SecurityConfig {
                                 "/agri/auth/face/login",
                                 "/agri/assistant/health"
                         ).permitAll()
-                        
+
+
+                        .requestMatchers(
+                                "/agri/phase1/*/sign/token",
+                                "/agri/phase1/*/payment-info",
+                                "/agri/phase1/*/create-checkout"
+                        ).permitAll()
+
+
                         // Enforce authentication for face enrollment (redundant with anyRequest().authenticated() but explicit is better)
                         .requestMatchers("/agri/auth/face/enroll").authenticated()
 

@@ -37,6 +37,8 @@ public class WhatIfSimulationResponse {
     private BigDecimal netImpact;
     private String verdict;   // POSITIVE, NEGATIVE, NEUTRAL
 
+    private List<String> feasibilityWarnings;  // Avertissements sur la faisabilité des changements demandés
+
     private Map<EntryCategory, CategoryImpact> categoryImpacts;
     private List<MonthProjection> monthlyProjections;
 
@@ -51,6 +53,7 @@ public class WhatIfSimulationResponse {
         private BigDecimal simulatedAmount;         // currentAmount × (1 + changePercent/100)
         private double changePercent;               // % appliqué par l'utilisateur (ex: -20 = réduction de 20%)
         private String formula;                     // Explication lisible du calcul appliqué
+        private String feasibility;                 // REALISTIC / AGGRESSIVE / UNREALISTIC / NO_DATA
     }
 
     @Data
