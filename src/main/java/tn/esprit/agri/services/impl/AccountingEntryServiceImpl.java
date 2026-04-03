@@ -245,9 +245,9 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
 
         for (int i = 1; i <= 3; i++) {
             LocalDate forecastStart = now.plusMonths(i).withDayOfMonth(1);
-            BigDecimal projectedIncome = monthlyIncome[2]
+            BigDecimal projectedIncome = avgMonthlyIncome
                     .add(incomeTrend.multiply(BigDecimal.valueOf(i))).max(BigDecimal.ZERO);
-            BigDecimal projectedExpense = monthlyExpense[2]
+            BigDecimal projectedExpense = avgMonthlyExpenses
                     .add(expenseTrend.multiply(BigDecimal.valueOf(i))).max(BigDecimal.ZERO);
             BigDecimal netCashflow = projectedIncome.subtract(projectedExpense);
             cumulative = cumulative.add(netCashflow);

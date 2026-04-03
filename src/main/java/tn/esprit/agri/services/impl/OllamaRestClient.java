@@ -34,7 +34,7 @@ public class OllamaRestClient {
             log.info("Appel à Ollama avec prompt ({} chars)...", prompt.length());
 
             Map<String, Object> request = Map.of(
-                    "model", "qwen2.5-coder",           // tu peux changer en llama3.2 ou qwen2.5 plus tard
+                    "model", "mistral",           // tu peux changer en llama3.2 ou qwen2.5 plus tard
                     "prompt", prompt,
                     "stream", false,
                     "format", "json",             // ← CLEF : force le mode JSON
