@@ -1,4 +1,4 @@
-# 🌾 AgriProtect — Agricultural Insurance & Farm Management Platform
+# 🌾 AgriProtect — Agricultural Insurance & Microfinance & Farm Management Platform
 
 > A full-featured Spring Boot backend for agricultural insurance management, AI-powered crop recommendations, risk detection, financial analytics, and more.
 
