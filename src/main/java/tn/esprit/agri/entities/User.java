@@ -35,6 +35,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "first_name")
@@ -60,6 +61,12 @@ public class User implements UserDetails {
     private String phoneNumber;
 
     private String address;
+
+    @Column(name = "account_balance")
+    private Double accountBalance = 0.0;
+
+    @Column(name = "expert_fund_id")
+    private String expertFundId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
