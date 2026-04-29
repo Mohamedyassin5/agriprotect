@@ -46,9 +46,11 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
         }
 
         // -------------------------------
-        // 2️⃣ Auto minScore = 40
+        // 2️⃣ Use provided minScore or default to 40
         // -------------------------------
-        fund.setMinScore(40);
+        if (fund.getMinScore() == null) {
+            fund.setMinScore(40);
+        }
 
         // -------------------------------
         // 3️⃣ Generate ID = name-cultureType
@@ -65,8 +67,10 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
                 .toList();
 
         if (eligibleFarmers.size() < 2) {
-            throw new RuntimeException(
-                    "Au moins 2 agriculteurs éligibles sont requis pour créer un fonds.");
+            throw new BusinessRuleException(
+                    "Au moins 2 agriculteurs éligibles (Score >= " + fund.getMinScore() + 
+                    " et Culture: " + fund.getCultureType() + ") sont requis pour créer un fonds.", 
+                    "INSUFFICIENT_ELIGIBLE_FARMERS");
         }
 
         // -------------------------------
@@ -75,7 +79,9 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
         fund.setCreatedBy(admin);
         fund.setStatus(FundStatus.ACTIVE);
         fund.setCreationDate(LocalDateTime.now());
-        fund.setCurrentBalance(0.0);
+        if (fund.getCurrentBalance() == null) {
+            fund.setCurrentBalance(0.0);
+        }
 
         SolidarityFund savedFund = solidarityFundRepository.save(fund);
 
@@ -120,6 +126,10 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
                 .id(fund.getId())
                 .name(fund.getName())
                 .numeroFond(fund.getNumeroFond())
+                .cultureType(fund.getCultureType())
+                .minScore(fund.getMinScore())
+                .primeAmount(fund.getPrimeAmount())
+                .currentBalance(fund.getCurrentBalance())
                 .createdByUsername(fund.getCreatedBy() != null ? fund.getCreatedBy().getUsername() : null)
                 .build();
     }
@@ -160,10 +170,22 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
                     "MONTHLY_PAYMENT_LIMIT_REACHED");
         }
 
-        // Apply discount if present
+        // Calculate discount and amount
         Double discount = membership.getDiscountPercentage() != null ? membership.getDiscountPercentage() : 0.0;
         double baseAmount = membership.getCurrentPrimeAmount();
         double amountToPay = baseAmount * (1 - (discount / 100.0));
+
+        // --- NEW: Deduct from User Account Balance ---
+        User farmer = membership.getFarmer();
+        if (farmer.getAccountBalance() < amountToPay) {
+            throw new BusinessRuleException(
+                "Solde insuffisant pour effectuer le paiement. Solde actuel: " + farmer.getAccountBalance() + " TND",
+                "INSUFFICIENT_FUNDS"
+            );
+        }
+        farmer.setAccountBalance(farmer.getAccountBalance() - amountToPay);
+        userRepository.save(farmer);
+        // --------------------------------------------
 
         membership.setMonthsPaid(membership.getMonthsPaid() + 1);
         membership.setTotalPaid(membership.getTotalPaid() + amountToPay);
@@ -172,6 +194,9 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
 
         farmerSolidarityFundRepository.save(membership);
         solidarityFundRepository.save(fund);
+        
+        // Ensure immediate persistence for balance consistency
+        userRepository.flush();
     }
 
     @Override
@@ -238,5 +263,9 @@ public class SolidarityFundService implements SolidarityFundServiceInterface {
                 farmerSolidarityFundRepository.save(membership);
             }
         }
+    }
+
+    public List<FarmerSolidarityFund> getFarmerMemberships(String farmerId) {
+        return farmerSolidarityFundRepository.findByFarmerId(farmerId);
     }
 }

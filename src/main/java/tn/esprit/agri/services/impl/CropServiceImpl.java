@@ -17,15 +17,29 @@ public class CropServiceImpl implements ICropService {
 
     private final CropRepository cropRepository;
     private final UserRepository userRepository;
+    private final SolidarityFundService solidarityFundService;
 
     @Override
     public Crop createCropForUser(String userId, Crop crop) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // Basic Validation
+        if (crop.getSurface() == null || crop.getSurface() <= 0) {
+            throw new RuntimeException("La surface doit être supérieure à 0.");
+        }
+        if (crop.getStartDate() != null && crop.getEndDate() != null && crop.getStartDate().isAfter(crop.getEndDate())) {
+            throw new RuntimeException("La date de début doit être avant la date de fin.");
+        }
+
         crop.setUser(user);
         crop.setCreatedAt(LocalDateTime.now());
-        return cropRepository.save(crop);
+        Crop savedCrop = cropRepository.save(crop);
 
+        // Logic Work: Auto-enroll in matching solidarity funds
+        solidarityFundService.autoEnrollInMatchingFunds(user, savedCrop.getCropType());
+
+        return savedCrop;
     }
 
     @Override

@@ -62,6 +62,7 @@ public class User implements UserDetails {
 
     private String address;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("accountBalance")
     @Column(name = "account_balance")
     private Double accountBalance = 0.0;
 

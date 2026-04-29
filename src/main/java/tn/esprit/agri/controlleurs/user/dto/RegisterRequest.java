@@ -28,4 +28,6 @@ public class RegisterRequest {
 
     private String phoneNumber;
     private String address;
+    private tn.esprit.agri.entities.enums.Role role;
+    private String expertFundId;
 }

@@ -38,6 +38,8 @@ public class UserController {
                     .lastName(req.getLastName())
                     .phoneNumber(req.getPhoneNumber())
                     .address(req.getAddress())
+                    .role(req.getRole())
+                    .expertFundId(req.getExpertFundId())
                     .build();
 
             User createdUser = userService.createUser(user);
@@ -85,12 +87,18 @@ public class UserController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        boolean deleted = userService.deleteUser(id);
-        if (deleted) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    public ResponseEntity<?> deleteUser(@PathVariable String id) {
+        try {
+            boolean deleted = userService.deleteUser(id);
+            if (deleted) {
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting user: " + e.getMessage() + " | Cause: " + 
+                          (e.getCause() != null ? e.getCause().getMessage() : "none"));
         }
     }
 
@@ -127,5 +135,31 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error");
         }
+    }
+
+    /**
+     * Get current authenticated user profile
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String email = authentication.getName();
+        return userService.getUserByEmail(email)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    /**
+     * Get current authenticated user balance only
+     */
+    @GetMapping("/me/balance")
+    public ResponseEntity<Double> getMyBalance(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.ok(0.0);
+        String email = authentication.getName();
+        return ResponseEntity.ok(userService.getUserByEmail(email)
+                .map(User::getAccountBalance)
+                .orElse(0.0));
     }
 }

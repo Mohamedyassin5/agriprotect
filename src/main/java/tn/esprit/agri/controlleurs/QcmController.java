@@ -78,9 +78,9 @@ public class QcmController {
         return ResponseEntity.ok(qcmTestRepository.save(test));
     }
 
-    // ✅ FARMER voit les tests actifs
+    // ✅ FARMER voit les tests actifs (ADMIN peut aussi les lister)
     @GetMapping("/available")
-    @PreAuthorize("hasRole('FARMER')")
+    @PreAuthorize("hasAnyRole('FARMER', 'ADMIN')")
     public ResponseEntity<List<QcmTest>> getAvailableTests() {
 
         LocalDateTime now = LocalDateTime.now();
@@ -195,4 +195,10 @@ public class QcmController {
                         "%. Pas de réduction.");
     }
 
+    @GetMapping("/my-results")
+    @PreAuthorize("hasRole('FARMER')")
+    public ResponseEntity<List<FarmerQcmResult>> getMyResults(Authentication authentication) {
+        User farmer = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(farmerQcmResultRepository.findByFarmerId(farmer.getId()));
+    }
 }

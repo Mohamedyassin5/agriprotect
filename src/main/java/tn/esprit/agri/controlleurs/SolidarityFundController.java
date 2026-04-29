@@ -121,4 +121,11 @@ public class SolidarityFundController {
 
         return ResponseEntity.ok("Vous avez rejoint le fonds " + fundId + " avec succès.");
     }
+
+    @GetMapping("/my-memberships")
+    @PreAuthorize("hasRole('FARMER')")
+    public ResponseEntity<List<tn.esprit.agri.entities.FarmerSolidarityFund>> getMyMemberships(Authentication authentication) {
+        User farmer = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(solidarityFundService.getFarmerMemberships(farmer.getId()));
+    }
 }
