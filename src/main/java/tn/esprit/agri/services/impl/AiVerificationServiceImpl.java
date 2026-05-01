@@ -27,6 +27,9 @@ public class AiVerificationServiceImpl implements AiVerificationService {
         @Value("${groq.api.key}")
         private String groqApiKey;
 
+        @Value("${groq.api.vision-model}")
+        private String visionModel;
+
         private final RestTemplate restTemplate;
         private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -75,7 +78,7 @@ public class AiVerificationServiceImpl implements AiVerificationService {
                                                                                         + base64Image))));
 
                         Map<String, Object> requestBody = Map.of(
-                                        "model", "meta-llama/llama-4-scout-17b-16e-instruct",
+                                        "model", visionModel,
                                         "messages", List.of(message),
                                         "max_tokens", 800,
                                         "temperature", 0.0);
@@ -118,8 +121,8 @@ public class AiVerificationServiceImpl implements AiVerificationService {
 
                         return AiAnalysisResponse.builder()
                                         .confidenceScore(0.0)
-                                        .analysisJustification("AI error: automatically refused for safety.")
-                                        .recommendation("REFUSE") // ✅ no more MANUAL_REVIEW
+                                        .analysisJustification("AI Service Error: " + e.getMessage())
+                                        .recommendation("REFUSE")
                                         .build();
                 }
         }
@@ -198,8 +201,36 @@ public class AiVerificationServiceImpl implements AiVerificationService {
                         return objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<List<tn.esprit.agri.DTO.AiQcmResponse>>() {});
 
                 } catch (Exception e) {
-                        log.error("AI QCM Generation Error: {}", e.getMessage(), e);
-                        throw new RuntimeException("Failed to generate QCM via AI", e);
+                        log.error("AI QCM Generation Error: {}. Using fallback mechanism.", e.getMessage());
+                        
+                        // Fallback mechanism: Generate high-quality static questions if AI fails
+                        return List.of(
+                            tn.esprit.agri.DTO.AiQcmResponse.builder()
+                                .text("Quelle est la période optimale pour la gestion intensive de la main-d'œuvre pour la culture de " + cultureType + " ?")
+                                .options(List.of("Phase de semis", "Phase de croissance végétative", "Période de récolte", "Période de repos hivernal"))
+                                .correctAnswer("Période de récolte")
+                                .build(),
+                            tn.esprit.agri.DTO.AiQcmResponse.builder()
+                                .text("Quel facteur environnemental influence le plus le besoin en travailleurs saisonniers pour le " + cultureType + " ?")
+                                .options(List.of("La couleur du sol", "Les conditions météorologiques (pluie/soleil)", "La proximité des routes", "Le type de clôture"))
+                                .correctAnswer("Les conditions météorologiques (pluie/soleil)")
+                                .build(),
+                            tn.esprit.agri.DTO.AiQcmResponse.builder()
+                                .text("Quelle technique permet d'optimiser l'efficacité de la main-d'œuvre lors de l'entretien du " + cultureType + " ?")
+                                .options(List.of("Le travail manuel sans outils", "La mécanisation partielle et l'organisation en équipes", "Le travail de nuit uniquement", "L'absence de supervision"))
+                                .correctAnswer("La mécanisation partielle et l'organisation en équipes")
+                                .build(),
+                            tn.esprit.agri.DTO.AiQcmResponse.builder()
+                                .text("Comment prévenir les risques d'accidents pour les ouvriers travaillant sur le " + cultureType + " ?")
+                                .options(List.of("Porter des vêtements de ville", "Utiliser des équipements de protection individuelle (EPI)", "Travailler plus vite", "Ignorer les consignes de sécurité"))
+                                .correctAnswer("Utiliser des équipements de protection individuelle (EPI)")
+                                .build(),
+                            tn.esprit.agri.DTO.AiQcmResponse.builder()
+                                .text("Quel est le signe principal indiquant un besoin urgent de main-d'œuvre pour la récolte du " + cultureType + " ?")
+                                .options(List.of("La maturité physiologique des fruits/grains", "Le début de l'hiver", "La fin du contrat des ouvriers", "L'arrivée de nouveaux outils"))
+                                .correctAnswer("La maturité physiologique des fruits/grains")
+                                .build()
+                        );
                 }
         }
 }

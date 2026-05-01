@@ -37,7 +37,8 @@ public class AuthController {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        String token = jwtService.generateToken(auth.getName());
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        String token = jwtService.generateToken(auth.getName(), role);
         return ResponseEntity.ok(new LoginResponse(token));
     }
 
@@ -97,7 +98,8 @@ public class AuthController {
             throw new RuntimeException("Face not matched (distance=" + result.getDistance() + ")");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
+        String role = "ROLE_" + user.getRole().name();
+        String token = jwtService.generateToken(user.getEmail(), role);
         return ResponseEntity.ok(new LoginResponse(token));
     }
 }

@@ -14,11 +14,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/agri/crops")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class CropController {
 
     private final ICropService cropService;
 
     @PostMapping("/user/{userId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'FARMER')")
     public ResponseEntity<Crop> createCropForUser(@PathVariable String userId, @Valid @RequestBody CropRequest req) {
         Crop crop = Crop.builder()
                 .cropType(req.getCropType())
