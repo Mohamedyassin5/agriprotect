@@ -51,7 +51,7 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
         }
 
         // Metric 2: Income Regularity (weight 0.20) — consistent monthly income
-        Long monthsWithIncome = entryRepository.countDistinctMonthsWithEntries(userId, EntryType.INCOME, threeMonthsAgo, now);
+        Long monthsWithIncome = entryRepository.countDistinctMonthsWithEntries(userId, EntryType.INCOME.name(), threeMonthsAgo, now);
         int incomeRegularityScore = Math.min(100, (int) (monthsWithIncome * 100 / 3));
 
         // Metric 3: Diversification (weight 0.15) — income from multiple categories
@@ -71,12 +71,13 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
         }
 
         // Metric 5: Trend Score (weight 0.15) — is profit improving?
+        BigDecimal firstHalfNet = BigDecimal.ZERO;
+        BigDecimal secondHalfNet = income3m.subtract(expense3m);
         int trendScore = 50;
         if (income6m.compareTo(BigDecimal.ZERO) > 0 && expense6m.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal firstHalfIncome = entryRepository.sumAmountByUserIdAndTypeAndDateRange(userId, EntryType.INCOME, sixMonthsAgo, threeMonthsAgo);
             BigDecimal firstHalfExpense = entryRepository.sumAmountByUserIdAndTypeAndDateRange(userId, EntryType.EXPENSE, sixMonthsAgo, threeMonthsAgo);
-            BigDecimal firstHalfNet = firstHalfIncome.subtract(firstHalfExpense);
-            BigDecimal secondHalfNet = income3m.subtract(expense3m);
+            firstHalfNet = firstHalfIncome.subtract(firstHalfExpense);
 
             if (secondHalfNet.compareTo(firstHalfNet) > 0) trendScore = 85;
             else if (secondHalfNet.compareTo(firstHalfNet) == 0) trendScore = 50;
@@ -95,12 +96,68 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
         else if (overallScore >= 35) healthLevel = "POOR";
         else healthLevel = "CRITICAL";
 
+        BigDecimal monthlyIncome3m = income3m.divide(BigDecimal.valueOf(3), 0, RoundingMode.HALF_UP);
+        BigDecimal monthlyExpense3m = expense3m.divide(BigDecimal.valueOf(3), 0, RoundingMode.HALF_UP);
+
         List<String> recommendations = new ArrayList<>();
-        if (expenseRatioScore < 60) recommendations.add("Réduisez vos dépenses : elles représentent une part trop élevée de vos revenus.");
-        if (incomeRegularityScore < 70) recommendations.add("Diversifiez vos sources de revenus pour assurer une régularité mensuelle.");
-        if (diversificationScore < 50) recommendations.add("Élargissez vos catégories de revenus pour réduire le risque.");
-        if (savingsRateScore < 60) recommendations.add("Essayez d'épargner au moins 20% de vos revenus mensuels.");
-        if (trendScore < 50) recommendations.add("Votre rentabilité décline — analysez les dépenses récentes.");
+
+        if (expenseRatioScore < 60) {
+            double ratioDisplay = income3m.compareTo(BigDecimal.ZERO) > 0
+                    ? expense3m.doubleValue() / income3m.doubleValue() * 100 : 0;
+            BigDecimal targetExpense = monthlyIncome3m.multiply(BigDecimal.valueOf(0.70));
+            BigDecimal monthlyReduction = monthlyExpense3m.subtract(targetExpense).max(BigDecimal.ZERO);
+            recommendations.add(String.format(
+                    "Vos dépenses (%.0f TND/mois) représentent %.0f%% de vos revenus (%.0f TND/mois). " +
+                    "Pour un ratio sain de 70%%, vous devez réduire de %.0f TND/mois — " +
+                    "examinez en priorité FERTILIZER, LABOR et EQUIPMENT qui concentrent généralement les plus grands postes.",
+                    monthlyExpense3m.doubleValue(), ratioDisplay, monthlyIncome3m.doubleValue(), monthlyReduction.doubleValue()));
+        }
+
+        if (incomeRegularityScore < 70) {
+            recommendations.add(String.format(
+                    "Revenus présents seulement %d mois sur 3 analysés : votre exploitation a des périodes sans entrée d'argent. " +
+                    "Planifiez des ventes échelonnées ou des contrats récurrents pour assurer un revenu chaque mois, " +
+                    "même en dehors des grandes récoltes.",
+                    monthsWithIncome));
+        }
+
+        if (diversificationScore < 50) {
+            recommendations.add(String.format(
+                    "Seulement %d catégorie(s) de revenus détectée(s) — forte dépendance à une source unique. " +
+                    "Ajoutez au moins 2 sources supplémentaires : ventes directes de plusieurs cultures, " +
+                    "location de matériel agricole, ou prestation de services à d'autres agriculteurs.",
+                    incomeCategories));
+        }
+
+        if (savingsRateScore < 60) {
+            BigDecimal monthlySavings3m = income3m.subtract(expense3m).divide(BigDecimal.valueOf(3), 0, RoundingMode.HALF_UP);
+            if (monthlySavings3m.compareTo(BigDecimal.ZERO) < 0) {
+                recommendations.add(String.format(
+                        "DÉFICIT : vos dépenses dépassent vos revenus de %.0f TND/mois en moyenne. " +
+                        "Priorité absolue — identifiez les 2-3 catégories les plus élevées et réduisez-les immédiatement " +
+                        "pour retrouver un flux positif avant de penser à l'épargne.",
+                        monthlySavings3m.abs().doubleValue()));
+            } else {
+                BigDecimal targetSavings = monthlyIncome3m.multiply(BigDecimal.valueOf(0.20));
+                BigDecimal gap = targetSavings.subtract(monthlySavings3m).max(BigDecimal.ZERO);
+                double currentRate = income3m.compareTo(BigDecimal.ZERO) > 0
+                        ? income3m.subtract(expense3m).doubleValue() / income3m.doubleValue() * 100 : 0;
+                recommendations.add(String.format(
+                        "Taux d'épargne actuel : %.0f%% (%.0f TND/mois). L'objectif est 20%% = %.0f TND/mois. " +
+                        "Il vous manque %.0f TND/mois — réduire TRANSPORT ou OTHER de quelques dépenses " +
+                        "non essentielles peut suffire à combler cet écart.",
+                        currentRate, monthlySavings3m.doubleValue(), targetSavings.doubleValue(), gap.doubleValue()));
+            }
+        }
+
+        if (trendScore < 50) {
+            BigDecimal decline = firstHalfNet.subtract(secondHalfNet);
+            recommendations.add(String.format(
+                    "Rentabilité en recul : profit des mois 4-6 (%.0f TND) vs mois 1-3 (%.0f TND) — " +
+                    "baisse de %.0f TND sur 6 mois. Comparez vos écritures de dépenses sur ces deux périodes " +
+                    "pour identifier la catégorie dont les coûts ont le plus augmenté.",
+                    firstHalfNet.doubleValue(), secondHalfNet.doubleValue(), decline.abs().doubleValue()));
+        }
 
         return FinancialHealthScoreResponse.builder()
                 .overallScore(overallScore)
@@ -224,6 +281,23 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                 "Basé sur %d écritures REVENUS et %d écritures DÉPENSES réelles entre le %s et le %s (moyenne sur 3 mois)",
                 incomeEntries, expenseEntries, threeMonthsAgo, now);
 
+        // Catégories essentielles agricoles — réductions agressives = risque réel
+        Set<EntryCategory> essentialCategories = Set.of(
+                EntryCategory.SEEDS, EntryCategory.FERTILIZER, EntryCategory.IRRIGATION);
+
+        List<String> feasibilityWarnings = new ArrayList<>();
+
+        // Vérifier la faisabilité de la hausse de revenus demandée
+        if (request.getIncomeChangePercent() != null) {
+            double incChange = request.getIncomeChangePercent();
+            if (incChange > 50)
+                feasibilityWarnings.add(String.format(
+                        "Hausse des revenus de +%.0f%% : très optimiste — aucune base historique ne justifie une telle augmentation.", incChange));
+            else if (incChange > 25)
+                feasibilityWarnings.add(String.format(
+                        "Hausse des revenus de +%.0f%% : ambitieux — à valider avec des données concrètes (nouveaux marchés, cultures).", incChange));
+        }
+
         // Apply income change
         BigDecimal simulatedIncome = monthlyIncome;
         if (request.getIncomeChangePercent() != null) {
@@ -251,6 +325,36 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
             BigDecimal simulated = catMonthly.multiply(
                     BigDecimal.ONE.add(BigDecimal.valueOf(changePct / 100))).setScale(2, RoundingMode.HALF_UP);
 
+            // --- Évaluation de la faisabilité par catégorie ---
+            String feasibility = "REALISTIC";
+            if (changePct != 0) {
+                if (catMonthly.compareTo(BigDecimal.ZERO) == 0) {
+                    feasibility = "NO_DATA";
+                    feasibilityWarnings.add(String.format(
+                            "%s : aucune dépense historique dans cette catégorie — simulation sans base réelle.", category));
+                } else if (changePct >= 100) {
+                    feasibility = "UNREALISTIC";
+                    feasibilityWarnings.add(String.format(
+                            "%s : hausse de +%.0f%% irréaliste — aucune base concrète ne justifie un doublement ou plus de ces dépenses.", category, changePct));
+                } else if (changePct >= 50) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s : hausse de +%.0f%% très agressive — à justifier par un investissement ou une expansion concrète.", category, changePct));
+                } else if (changePct <= -50) {
+                    feasibility = "UNREALISTIC";
+                    feasibilityWarnings.add(String.format(
+                            "%s : réduction de %.0f%% irréaliste — il est impossible de supprimer plus de la moitié de ces dépenses.", category, Math.abs(changePct)));
+                } else if (changePct <= -30 && essentialCategories.contains(category)) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s est une dépense essentielle agricole — une réduction de %.0f%% risque d'impacter directement la production.", category, Math.abs(changePct)));
+                } else if (changePct <= -25) {
+                    feasibility = "AGGRESSIVE";
+                    feasibilityWarnings.add(String.format(
+                            "%s : réduction de %.0f%% agressive — difficile à tenir sur plusieurs mois.", category, Math.abs(changePct)));
+                }
+            }
+
             if (catMonthly.compareTo(BigDecimal.ZERO) > 0 || changePct != 0) {
                 String formula;
                 if (changePct == 0) {
@@ -269,6 +373,7 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                         .simulatedAmount(simulated)
                         .changePercent(changePct)
                         .formula(formula)
+                        .feasibility(feasibility)
                         .build());
             }
 
@@ -314,6 +419,7 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                 .simulatedNetIncome(simulatedNet)
                 .netImpact(netImpact)
                 .verdict(verdict)
+                .feasibilityWarnings(feasibilityWarnings)
                 .categoryImpacts(categoryImpacts)
                 .monthlyProjections(projections)
                 .build();
@@ -430,10 +536,27 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
         double rSquared = ssTotal > 0 ? 1 - (ssResidual / ssTotal) : 0;
 
         String interpretation;
-        if (slope > 100) interpretation = "Forte tendance à la hausse — rentabilité en nette amélioration";
-        else if (slope > 0) interpretation = "Légère tendance à la hausse — rentabilité en amélioration";
-        else if (slope > -100) interpretation = "Légère tendance à la baisse — surveillez vos dépenses";
-        else interpretation = "Forte tendance à la baisse — action corrective nécessaire";
+        String reliabilityNote = rSquared > 0.6 ? "fiabilité bonne" : rSquared > 0.3 ? "fiabilité modérée — données irrégulières" : "fiabilité faible — peu de données disponibles";
+        if (slope > 100)
+            interpretation = String.format(
+                    "Progression solide : la rentabilité gagne +%.0f TND/mois en tendance (R²=%.2f, %s). " +
+                    "Votre exploitation s'améliore régulièrement — maintenez cette dynamique.",
+                    Math.abs(slope), rSquared, reliabilityNote);
+        else if (slope > 0)
+            interpretation = String.format(
+                    "Légère hausse : +%.0f TND/mois de progression (R²=%.2f, %s). " +
+                    "Tendance positive mais fragile — maîtrisez vos dépenses variables pour la consolider.",
+                    Math.abs(slope), rSquared, reliabilityNote);
+        else if (slope > -100)
+            interpretation = String.format(
+                    "Légère baisse : %.0f TND/mois de moins en tendance (R²=%.2f, %s). " +
+                    "Vérifiez les catégories dont les dépenses ont augmenté ces derniers mois pour inverser la tendance.",
+                    Math.abs(slope), rSquared, reliabilityNote);
+        else
+            interpretation = String.format(
+                    "Baisse sévère : %.0f TND/mois de moins chaque mois (R²=%.2f, %s). " +
+                    "Action corrective urgente — analysez vos 3 catégories de dépenses les plus élevées et réduisez-les immédiatement.",
+                    Math.abs(slope), rSquared, reliabilityNote);
 
         return ProfitabilityTrendResponse.LinearRegressionResult.builder()
                 .slope(Math.round(slope * 100.0) / 100.0)
@@ -549,9 +672,31 @@ public class AccountingAIServiceImpl implements IAccountingAIService {
                 else severity = "LOW";
 
                 String recommendation;
-                if ("CRITICAL".equals(severity)) recommendation = "Budget déjà dépassé ! Réduisez immédiatement les dépenses dans cette catégorie.";
-                else if ("HIGH".equals(severity)) recommendation = "Réduisez les dépenses de " + budget.getCategory() + " de " + Math.round(overPct) + "% pour rester dans le budget.";
-                else recommendation = "Surveillez les dépenses de " + budget.getCategory() + " — tendance légèrement au-dessus du budget.";
+                if ("CRITICAL".equals(severity)) {
+                    BigDecimal overAmount = spentSoFar.subtract(budget.getPlannedAmount());
+                    BigDecimal dailyCutNeeded = daysRemaining > 0
+                            ? overAmount.divide(BigDecimal.valueOf(daysRemaining), 1, RoundingMode.CEILING) : overAmount;
+                    recommendation = String.format(
+                            "Budget DÉPASSÉ en %s : %.0f TND dépensés sur %.0f TND prévus (dépassement de %.0f TND). " +
+                            "Il reste %d jours — réduisez de %.1f TND/jour minimum pour limiter les dégâts. Stoppez tout achat non urgent dans cette catégorie.",
+                            budget.getCategory(), spentSoFar.doubleValue(), budget.getPlannedAmount().doubleValue(),
+                            overAmount.doubleValue(), daysRemaining, dailyCutNeeded.doubleValue());
+                } else if ("HIGH".equals(severity)) {
+                    BigDecimal allowedDaily = budget.getPlannedAmount().subtract(spentSoFar)
+                            .divide(BigDecimal.valueOf(Math.max(1, daysRemaining)), 1, RoundingMode.HALF_UP);
+                    recommendation = String.format(
+                            "Dépassement prévu de %.0f%% en %s : %.0f TND dépensés, %.0f TND projetés sur un budget de %.0f TND. " +
+                            "Limitez-vous à %.1f TND/jour (vs %.1f TND/jour actuellement) pour tenir le budget sur les %d jours restants.",
+                            overPct, budget.getCategory(), spentSoFar.doubleValue(), projectedMonthEnd.doubleValue(),
+                            budget.getPlannedAmount().doubleValue(), allowedDaily.doubleValue(), dailyBurnRate.doubleValue(), daysRemaining);
+                } else {
+                    recommendation = String.format(
+                            "%s : %.0f TND dépensés à ce jour sur %.0f TND prévus — rythme de %.1f TND/jour légèrement élevé. " +
+                            "Projeté à %.0f TND en fin de mois (+%.0f TND au-dessus du budget). " +
+                            "Vérifiez si les prochains achats dans cette catégorie sont vraiment nécessaires ce mois-ci.",
+                            budget.getCategory(), spentSoFar.doubleValue(), budget.getPlannedAmount().doubleValue(),
+                            dailyBurnRate.doubleValue(), projectedMonthEnd.doubleValue(), projectedOverspend.doubleValue());
+                }
 
                 alerts.add(PredictiveBudgetAlertResponse.PredictiveAlert.builder()
                         .category(budget.getCategory())

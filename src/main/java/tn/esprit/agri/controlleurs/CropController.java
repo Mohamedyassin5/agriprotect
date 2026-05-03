@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import tn.esprit.agri.controlleurs.crop.dto.CropRequest;
 import tn.esprit.agri.entities.Crop;
 import tn.esprit.agri.services.ICropService;
 
@@ -17,7 +19,21 @@ public class CropController {
     private final ICropService cropService;
 
     @PostMapping("/user/{userId}")
-    public ResponseEntity<Crop> createCropForUser(@PathVariable String userId, @RequestBody Crop crop) {
+    public ResponseEntity<Crop> createCropForUser(@PathVariable String userId, @Valid @RequestBody CropRequest req) {
+        Crop crop = Crop.builder()
+                .cropType(req.getCropType())
+                .surface(req.getSurface())
+                .optimalHumidity(req.getOptimalHumidity())
+                .minHumidity(req.getMinHumidity())
+                .maxHumidity(req.getMaxHumidity())
+                .minTemperature(req.getMinTemperature())
+                .maxTemperature(req.getMaxTemperature())
+                .averageTemperature(req.getAverageTemperature())
+                .startDate(req.getStartDate())
+                .endDate(req.getEndDate())
+                .typeterres(req.getTypeterres())
+                .build();
+
         Crop createdCrop = cropService.createCropForUser(userId, crop);
         return new ResponseEntity<>(createdCrop, HttpStatus.CREATED);
     }
@@ -66,5 +82,11 @@ public class CropController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Crop>> searchCrops(@RequestParam String keyword) {
+        List<Crop> crops = cropService.searchByKeyword(keyword);
+        return ResponseEntity.ok(crops);
     }
 }

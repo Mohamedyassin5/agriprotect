@@ -5,6 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.agri.ai.client.FinanceAIClient;
+import tn.esprit.agri.ai.dto.FinancialRiskRequest;
+import tn.esprit.agri.ai.dto.FinancialRiskResponse;
 import tn.esprit.agri.dto_savings_accountability.*;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.services.IAccountingAIService;
@@ -15,6 +18,7 @@ import tn.esprit.agri.services.IAccountingAIService;
 public class AccountingAIController {
 
     private final IAccountingAIService accountingAIService;
+    private final FinanceAIClient financeAIClient;
 
     // Feature 1: Financial Health Score
     @GetMapping("/health-score")
@@ -62,5 +66,13 @@ public class AccountingAIController {
     @PreAuthorize("hasRole('FARMER')")
     public ResponseEntity<PredictiveBudgetAlertResponse> getPredictiveBudgetAlerts(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(accountingAIService.getPredictiveBudgetAlerts(user.getId()));
+    }
+
+    // Feature ML: Financial Risk Prediction (Notebook Module 2)
+    @PostMapping("/ml/risk-predict")
+    @PreAuthorize("hasRole('FARMER')")
+    public ResponseEntity<FinancialRiskResponse> predictFinancialRisk(@RequestBody FinancialRiskRequest request) {
+        FinancialRiskResponse response = financeAIClient.predictFinancialRisk(request);
+        return ResponseEntity.ok(response);
     }
 }

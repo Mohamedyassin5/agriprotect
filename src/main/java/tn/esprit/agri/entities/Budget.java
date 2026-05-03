@@ -13,9 +13,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "budget", indexes = {
-        @Index(name = "idx_budget_user_period", columnList = "user_id, period_start, period_end")
-})
+@Table(name = "budget",
+        indexes = {
+                @Index(name = "idx_budget_user_period", columnList = "user_id, period_start, period_end")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_budget_user_category_period",
+                        columnNames = {"user_id", "category", "period_start", "period_end"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -30,6 +30,13 @@ public class BudgetServiceImpl implements IBudgetService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (budgetRepository.existsByUserIdAndCategoryAndPeriodStartAndPeriodEnd(
+                userId, request.getCategory(), request.getPeriodStart(), request.getPeriodEnd())) {
+            throw new IllegalArgumentException(
+                    "Un budget pour la catégorie '" + request.getCategory() +
+                    "' existe déjà pour cette période (" + request.getPeriodStart() + " → " + request.getPeriodEnd() + ")");
+        }
+
         Budget budget = new Budget();
         budget.setUser(user);
         budget.setPeriodType(request.getPeriodType());

@@ -3,6 +3,9 @@ package tn.esprit.agri.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -10,17 +13,38 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tn.esprit.agri.security.JwtAuthenticationFilter;
 
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import java.util.List;
 
 @Configuration
-@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Bean
+    static RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy(
+                "ROLE_ADMIN > ROLE_EXPERT\nROLE_EXPERT > ROLE_FARMER"
+        );
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -34,16 +58,60 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+        return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/agri/auth/**", "/agri/users", "/agri/crops/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
+                        .requestMatchers(
+                                "/", "/index.html", "/sign-contract.html", "/payment.html",
+                                "/payment-success.html", "/payment-cancel.html","/regularize-payment.html",
+                                "/swagger-ui/**", "/v3/api-docs/**",
+                                "/agri/auth/**", "/stripe/webhook"
+                        ).permitAll()
+                        // Public auth endpoints
+                        .requestMatchers(
+                                "/agri/auth/login",
+                                "/agri/auth/forgot-password",
+                                "/agri/auth/reset-password",
+                                "/agri/auth/face/login",
+                                "/agri/assistant/health"
+                        ).permitAll()
+
+
+                        .requestMatchers(
+                                "/agri/phase1/*/sign/token",
+                                "/agri/phase1/*/payment-info",
+                                "/agri/phase1/*/create-checkout"
+                        ).permitAll()
+
+
+                        // Allow OPTIONS preflight requests (CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Enforce authentication for face enrollment (redundant with anyRequest().authenticated() but explicit is better)
+                        .requestMatchers("/agri/auth/face/enroll").authenticated()
+
+                        // Public register ONLY (POST /agri/users)
+                        .requestMatchers(HttpMethod.POST, "/agri/users").permitAll()
+
+                        // Swagger / docs
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/h2-console/**"
+                        ).permitAll()
+
+                        // If you want AI recommend public (optional)
+                        .requestMatchers(HttpMethod.POST, "/agri/crops/recommend").permitAll()
+
+                        // Everything else requires JWT
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
-        return http.build();
+                // for H2 console frames
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .build();
     }
 }
+

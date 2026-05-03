@@ -5,9 +5,11 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tn.esprit.agri.entities.User;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -36,12 +38,17 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateToken(String username, String userId) {
+    public String generateToken(User user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
-                .setSubject(username)
-                .claim("userId", userId)
+                .setSubject(user.getEmail())
+                .addClaims(Map.of(
+                        "userId",    user.getId(),
+                        "role",      user.getRole().name(),
+                        "firstName", user.getFirstName() != null ? user.getFirstName() : "",
+                        "lastName",  user.getLastName()  != null ? user.getLastName()  : ""
+                ))
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -50,11 +57,6 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return parseClaims(token).getSubject();
-    }
-
-    public String extractUserId(String token) {
-        Claims claims = parseClaims(token);
-        return claims.get("userId", String.class);
     }
 
     public boolean isTokenValid(String token) {

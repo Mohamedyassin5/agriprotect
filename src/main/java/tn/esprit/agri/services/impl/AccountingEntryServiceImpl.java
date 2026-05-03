@@ -203,34 +203,67 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
     @Override
     @Transactional(readOnly = true)
     public CashflowForecastResponse getCashflowForecast(String userId) {
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusMonths(3);
+        LocalDate now = LocalDate.now();
 
-        BigDecimal totalIncome = entryRepository.sumAmountByUserIdAndTypeAndDateRange(
-                userId, EntryType.INCOME, startDate, endDate);
-        BigDecimal totalExpense = entryRepository.sumAmountByUserIdAndTypeAndDateRange(
-                userId, EntryType.EXPENSE, startDate, endDate);
+        // Chercher les 3 derniers mois qui ont réellement des données (scan 12 mois max)
+        BigDecimal[] monthlyIncome = new BigDecimal[3];
+        BigDecimal[] monthlyExpense = new BigDecimal[3];
+        int filled = 0;
 
-        BigDecimal avgMonthlyIncome = totalIncome.divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
-        BigDecimal avgMonthlyExpenses = totalExpense.divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
+        for (int lookback = 1; lookback <= 12 && filled < 3; lookback++) {
+            LocalDate monthStart = now.minusMonths(lookback).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            BigDecimal inc = entryRepository.sumAmountByUserIdAndTypeAndDateRange(userId, EntryType.INCOME, monthStart, monthEnd);
+            BigDecimal exp = entryRepository.sumAmountByUserIdAndTypeAndDateRange(userId, EntryType.EXPENSE, monthStart, monthEnd);
+            if (inc.compareTo(BigDecimal.ZERO) > 0 || exp.compareTo(BigDecimal.ZERO) > 0) {
+                // Remplir du plus récent (index 2) vers le plus ancien (index 0)
+                monthlyIncome[2 - filled] = inc;
+                monthlyExpense[2 - filled] = exp;
+                filled++;
+            }
+        }
+
+        // Si moins de 3 mois trouvés, compléter avec zéro
+        for (int i = 0; i < 3; i++) {
+            if (monthlyIncome[i] == null) monthlyIncome[i] = BigDecimal.ZERO;
+            if (monthlyExpense[i] == null) monthlyExpense[i] = BigDecimal.ZERO;
+        }
+
+        // Tendance linéaire : variation moyenne = (M_recent - M_ancien) / 2
+        BigDecimal incomeTrend = monthlyIncome[2].subtract(monthlyIncome[0])
+                .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+        BigDecimal expenseTrend = monthlyExpense[2].subtract(monthlyExpense[0])
+                .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+
+        BigDecimal avgMonthlyIncome = monthlyIncome[0].add(monthlyIncome[1]).add(monthlyIncome[2])
+                .divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
+        BigDecimal avgMonthlyExpenses = monthlyExpense[0].add(monthlyExpense[1]).add(monthlyExpense[2])
+                .divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
 
         List<CashflowForecastResponse.MonthlyForecast> forecasts = new ArrayList<>();
         BigDecimal cumulative = BigDecimal.ZERO;
 
         for (int i = 1; i <= 3; i++) {
-            LocalDate forecastStart = endDate.plusMonths(i).withDayOfMonth(1);
-            BigDecimal netCashflow = avgMonthlyIncome.subtract(avgMonthlyExpenses);
+            LocalDate forecastStart = now.plusMonths(i).withDayOfMonth(1);
+            BigDecimal projectedIncome = avgMonthlyIncome
+                    .add(incomeTrend.multiply(BigDecimal.valueOf(i))).max(BigDecimal.ZERO);
+            BigDecimal projectedExpense = avgMonthlyExpenses
+                    .add(expenseTrend.multiply(BigDecimal.valueOf(i))).max(BigDecimal.ZERO);
+            BigDecimal netCashflow = projectedIncome.subtract(projectedExpense);
             cumulative = cumulative.add(netCashflow);
 
             forecasts.add(CashflowForecastResponse.MonthlyForecast.builder()
                     .month(forecastStart.getMonth().name() + " " + forecastStart.getYear())
                     .periodStart(forecastStart)
-                    .projectedIncome(avgMonthlyIncome)
-                    .projectedExpenses(avgMonthlyExpenses)
+                    .projectedIncome(projectedIncome)
+                    .projectedExpenses(projectedExpense)
                     .projectedNetCashflow(netCashflow)
                     .cumulativeCashflow(cumulative)
                     .build());
         }
+
+        BigDecimal totalIncome = monthlyIncome[0].add(monthlyIncome[1]).add(monthlyIncome[2]);
+        BigDecimal totalExpense = monthlyExpense[0].add(monthlyExpense[1]).add(monthlyExpense[2]);
 
         return CashflowForecastResponse.builder()
                 .currentBalance(totalIncome.subtract(totalExpense))

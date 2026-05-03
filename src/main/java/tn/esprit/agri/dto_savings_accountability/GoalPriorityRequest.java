@@ -31,5 +31,5 @@ public class GoalPriorityRequest {
     /**
      * Si true, remet l'allocation à automatique (efface customAllocationPercentage).
      */
-    private boolean resetToAuto = false;
+    private Boolean resetToAuto = false;
 }

@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Épargne — AgriProtect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .fade-in{animation:fadeIn .35s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    input[type=range]{accent-color:#16a34a}
+    .progress-ring{stroke-dasharray:220;stroke-dashoffset:220;transition:stroke-dashoffset .8s ease}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+<!-- NAV -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+    <div class="flex items-center gap-2 text-green-700 font-bold text-lg"><i class="fa-solid fa-leaf"></i> AgriProtect</div>
+    <div class="flex gap-1">
+      <a href="dashboard.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-gauge-high mr-1"></i>Dashboard</a>
+      <a href="accounting.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-book mr-1"></i>Comptabilité</a>
+      <a href="accounting-ai.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-brain mr-1"></i>IA Comptabilité</a>
+      <a href="savings.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-700"><i class="fa-solid fa-piggy-bank mr-1"></i>Épargne</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="toggleToken()" class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"><i class="fa-solid fa-key"></i> Token</button>
+      <span id="token-status" class="w-2 h-2 rounded-full bg-red-400"></span>
+    </div>
+  </div>
+  <div id="token-panel" class="hidden border-t bg-gray-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex gap-2">
+      <input id="token-input" type="text" placeholder="Collez votre JWT Bearer token ici..." class="flex-1 text-xs border border-gray-300 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-green-400">
+      <button onclick="saveToken()" class="px-4 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700">Enregistrer</button>
+      <button onclick="clearToken()" class="px-4 py-2 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200">Supprimer</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-6">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fa-solid fa-piggy-bank"></i> Épargne</h1>
+    <p class="text-green-100 text-sm mt-1">Compte · Transactions · Objectifs · Analytics · IA</p>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="bg-white border-b border-gray-200 sticky top-14 z-40">
+  <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+    <button onclick="showTab('account')" id="tab-account" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-green-600 text-green-700 font-semibold -mb-px"><i class="fa-solid fa-bank mr-1"></i>Compte</button>
+    <button onclick="showTab('txn')" id="tab-txn" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-arrows-left-right mr-1"></i>Transactions</button>
+    <button onclick="showTab('goals')" id="tab-goals" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-bullseye mr-1"></i>Objectifs</button>
+    <button onclick="showTab('analytics')" id="tab-analytics" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-chart-bar mr-1"></i>Analytics</button>
+    <button onclick="showTab('ai')" id="tab-ai" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-brain mr-1"></i>IA Épargne</button>
+  </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+<!-- ══════ COMPTE ══════ -->
+<div id="tab-account-content">
+  <div class="grid md:grid-cols-2 gap-6">
+
+    <!-- Infos compte -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-bank text-green-600"></i> Mon Compte Épargne</h3>
+        <button onclick="loadAccount()" class="text-xs text-green-600 hover:text-green-700"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+      <div id="account-info">
+        <div class="skeleton h-32 rounded-xl"></div>
+      </div>
+    </div>
+
+    <!-- Formulaire compte -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-gear text-green-600"></i>
+        <span id="account-form-title">Créer / Modifier le Compte</span>
+      </h3>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">Nom du compte</label>
+          <input type="text" id="acc-name" placeholder="Ex: Épargne exploitation agricole"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">Objectif mensuel (TND)</label>
+          <input type="number" id="acc-target" step="0.01" min="0" placeholder="500.00"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">Statut</label>
+          <select id="acc-status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="FROZEN">FROZEN</option>
+          </select>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="createAccount()" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm hover:bg-green-700 font-medium">
+            <i class="fa-solid fa-plus mr-1"></i> Créer
+          </button>
+          <button onclick="updateAccount()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 font-medium">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Modifier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TRANSACTIONS ══════ -->
+<div id="tab-txn-content" class="hidden">
+  <div class="grid md:grid-cols-3 gap-6">
+
+    <!-- Formulaire transaction + simulateur -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-green-600"></i> Nouvelle Transaction</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Type</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-deposit" onclick="setTxnType('DEPOSIT')" class="py-2 rounded-lg text-sm font-medium bg-green-100 text-green-700 border-2 border-green-400">
+                <i class="fa-solid fa-arrow-down mr-1"></i> Dépôt
+              </button>
+              <button id="btn-withdraw" onclick="setTxnType('WITHDRAWAL')" class="py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 border-2 border-transparent">
+                <i class="fa-solid fa-arrow-up mr-1"></i> Retrait
+              </button>
+            </div>
+          </div>
+          <input type="hidden" id="txn-type" value="DEPOSIT">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Montant (TND)</label>
+            <input type="number" id="txn-amount" step="0.01" min="0" placeholder="0.00"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Description</label>
+            <input type="text" id="txn-desc" placeholder="Description..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <button onclick="doTransaction()" class="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm hover:bg-green-700 font-medium">
+            <i class="fa-solid fa-paper-plane mr-1"></i> Effectuer
+          </button>
+        </div>
+      </div>
+
+      <!-- Simulateur retrait -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2"><i class="fa-solid fa-flask text-blue-500"></i> Simuler un Retrait</h3>
+        <div class="space-y-3">
+          <input type="number" id="sim-amount" step="0.01" min="0" placeholder="Montant à simuler..."
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          <button onclick="simulateWithdraw()" class="w-full bg-blue-600 text-white py-2 rounded-xl text-sm hover:bg-blue-700">
+            <i class="fa-solid fa-calculator mr-1"></i> Simuler
+          </button>
+          <div id="sim-result" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste transactions -->
+    <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-list text-green-600"></i> Historique</h3>
+        <div class="flex gap-2">
+          <select id="txn-filter" onchange="loadTxns()" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+            <option value="">Tous types</option>
+            <option value="DEPOSIT">DEPOSIT</option>
+            <option value="WITHDRAWAL">WITHDRAWAL</option>
+          </select>
+          <button onclick="loadTxns()" class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+      <div id="txn-list" class="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+        <div class="skeleton h-12 rounded-xl"></div>
+        <div class="skeleton h-12 rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ OBJECTIFS ══════ -->
+<div id="tab-goals-content" class="hidden">
+  <div class="grid md:grid-cols-3 gap-6">
+
+    <!-- Formulaire goal -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-green-600"></i>
+          <span id="goal-form-title">Nouvel Objectif</span>
+        </h3>
+        <input type="hidden" id="goal-id">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Nom</label>
+            <input type="text" id="goal-name" placeholder="Ex: Achat tracteur"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Montant cible (TND)</label>
+            <input type="number" id="goal-target" step="0.01" min="0"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Date cible</label>
+            <input type="date" id="goal-date"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Description</label>
+            <textarea id="goal-desc" rows="2" placeholder="Description..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none resize-none"></textarea>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="saveGoal()" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm hover:bg-green-700 font-medium">
+              <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer
+            </button>
+            <button onclick="resetGoalForm()" class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority PATCH -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2"><i class="fa-solid fa-sliders text-blue-500"></i> Allocation / Priorité</h3>
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">ID Objectif</label>
+            <input type="text" id="prio-goal-id" placeholder="ID du goal..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Priorité (0 = auto)</label>
+            <input type="number" id="prio-val" min="0" placeholder="1, 2, 3..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">% Allocation fixe (optionnel)</label>
+            <input type="number" id="prio-pct" min="0" max="100" step="1" placeholder="ex: 40"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+          </div>
+          <div class="flex gap-2">
+            <button onclick="setPriority()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700">Appliquer</button>
+            <button onclick="resetPriority()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-200">Réinitialiser</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste goals -->
+    <div class="md:col-span-2 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-bullseye text-green-600"></i> Objectifs Actifs</h3>
+          <button onclick="loadGoals()" class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+        <div id="goals-list" class="space-y-3">
+          <div class="skeleton h-20 rounded-xl"></div>
+          <div class="skeleton h-20 rounded-xl"></div>
+        </div>
+      </div>
+
+      <!-- Archive -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-box-archive text-gray-500"></i> Objectifs Archivés</h3>
+          <button onclick="loadArchive()" class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs"><i class="fa-solid fa-rotate mr-1"></i>Charger</button>
+        </div>
+        <div id="archive-list" class="text-sm text-gray-400 text-center py-4">Cliquez "Charger" pour voir les archives</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ ANALYTICS ÉPARGNE ══════ -->
+<div id="tab-analytics-content" class="hidden space-y-6">
+  <div class="flex gap-3 flex-wrap">
+    <button onclick="loadSavingsAnalytics()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Tout charger</button>
+    <div class="flex items-center gap-2">
+      <label class="text-xs text-gray-500">Résumé mensuel :</label>
+      <select id="monthly-months" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+        <option value="3">3 mois</option><option value="6" selected>6 mois</option><option value="12">12 mois</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-xs text-gray-500">Relevé du</label>
+      <input type="date" id="stmt-from" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+      <label class="text-xs text-gray-500">au</label>
+      <input type="date" id="stmt-to" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+    </div>
+  </div>
+
+  <!-- Goal Progress + Recommendation -->
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-bullseye text-green-600"></i> Progression vers l'Objectif</h3>
+      <div id="goal-progress"></div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-yellow-500"></i> Recommandation</h3>
+      <div id="recommendation-box"></div>
+    </div>
+  </div>
+
+  <!-- Alertes + Monthly Summary -->
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-bell text-orange-500"></i> Alertes Épargne</h3>
+      <div id="savings-alerts"></div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar text-blue-500"></i> Résumé Mensuel</h3>
+      <div id="monthly-summary"></div>
+    </div>
+  </div>
+
+  <!-- Relevé -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-file-lines text-gray-600"></i> Relevé de Compte</h3>
+    <div id="statement-box"></div>
+  </div>
+</div>
+
+<!-- ══════ IA ÉPARGNE ══════ -->
+<div id="tab-ai-content" class="hidden space-y-6">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+    <button onclick="loadGoalPrediction()" class="px-3 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"><i class="fa-solid fa-rotate mr-1"></i>Prédiction objectifs</button>
+    <button onclick="loadSmartPlan()" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"><i class="fa-solid fa-rotate mr-1"></i>Plan intelligent</button>
+    <button onclick="loadEmergencyFund()" class="px-3 py-2 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600"><i class="fa-solid fa-rotate mr-1"></i>Fonds d'urgence</button>
+    <button onclick="loadAllAI()" class="px-3 py-2 bg-gray-700 text-white text-xs rounded-lg hover:bg-gray-800"><i class="fa-solid fa-brain mr-1"></i>Tout charger</button>
+  </div>
+
+  <!-- Prédiction objectifs -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-crystal-ball text-purple-500"></i> Prédiction d'Atteinte des Objectifs</h3>
+    <div id="prediction-meta" class="mb-4 hidden p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-700"></div>
+    <div id="goal-predictions" class="space-y-4">
+      <div class="skeleton h-24 rounded-xl"></div>
+      <div class="skeleton h-24 rounded-xl"></div>
+    </div>
+    <!-- Scénarios -->
+    <div id="scenarios-box" class="mt-4 hidden">
+      <h4 class="text-sm font-semibold text-gray-600 mb-3">Scénarios comparatifs</h4>
+      <div id="scenarios-grid" class="grid md:grid-cols-3 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- Score risque retrait -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-red-500"></i> Score de Risque de Retrait</h3>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">Montant du retrait envisagé (TND)</label>
+          <input type="number" id="risk-amount" step="0.01" min="0" placeholder="0.00"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+        </div>
+        <button onclick="assessRisk()" class="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm hover:bg-red-700 font-medium">
+          <i class="fa-solid fa-calculator mr-1"></i> Évaluer le Risque
+        </button>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-400">
+          <button onclick="document.getElementById('risk-amount').value=100;assessRisk()" class="py-1 bg-green-50 rounded-lg hover:bg-green-100 text-green-600">Test 100 TND</button>
+          <button onclick="document.getElementById('risk-amount').value=2000;assessRisk()" class="py-1 bg-orange-50 rounded-lg hover:bg-orange-100 text-orange-600">Test 2 000 TND</button>
+          <button onclick="document.getElementById('risk-amount').value=5000;assessRisk()" class="py-1 bg-red-50 rounded-lg hover:bg-red-100 text-red-600">Test 5 000 TND</button>
+        </div>
+      </div>
+      <div id="risk-result" class="space-y-3">
+        <div class="text-sm text-gray-400 text-center py-8">Entrez un montant et cliquez "Évaluer"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan intelligent -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar-check text-blue-500"></i> Plan d'Épargne Intelligent</h3>
+    <div id="smart-plan-meta" class="hidden mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700"></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100">
+          <th class="py-2 px-3 text-left text-xs text-gray-400">Mois</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400">Épargne conseillée</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400">Solde projeté</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400">Progression</th>
+          <th class="py-2 px-3 text-left text-xs text-gray-400">Note saisonnière</th>
+        </tr></thead>
+        <tbody id="smart-plan-body"><tr><td colspan="5" class="text-center py-6 text-gray-400 text-sm">Cliquez "Plan intelligent" pour charger</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Fonds urgence -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-shield text-orange-500"></i> Calculateur Fonds d'Urgence</h3>
+    <div id="emergency-fund-content">
+      <div class="skeleton h-40 rounded-xl"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /max-w -->
+
+<!-- MODAL -->
+<div id="modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center">
+  <div class="bg-white rounded-2xl p-6 shadow-xl w-80">
+    <h3 class="font-semibold text-gray-800 mb-2">Confirmer</h3>
+    <p class="text-sm text-gray-500 mb-4" id="modal-msg"></p>
+    <div class="flex gap-3">
+      <button onclick="confirmAction()" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm hover:bg-red-700">Confirmer</button>
+      <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
+  <div class="bg-gray-800 text-white text-sm rounded-xl px-4 py-3 shadow-lg flex items-center gap-2">
+    <i id="toast-icon" class="fa-solid fa-circle-info"></i><span id="toast-msg"></span>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://localhost:8085';
+let modalCallback = null;
+
+// ── Token ──────────────────────────────────────────────
+function token(){return localStorage.getItem('agri_token')||'';}
+function saveToken(){const v=document.getElementById('token-input').value.trim();if(!v)return;localStorage.setItem('agri_token',v);updateTokenStatus();toggleToken();toast('Token enregistré','success');}
+function clearToken(){localStorage.removeItem('agri_token');updateTokenStatus();toast('Token supprimé','info');}
+function toggleToken(){const p=document.getElementById('token-panel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))document.getElementById('token-input').value=token();}
+function updateTokenStatus(){document.getElementById('token-status').className='w-2 h-2 rounded-full '+(token()?'bg-green-400':'bg-red-400');}
+
+function toast(msg,type='info'){
+  const icons={success:'fa-circle-check text-green-400',error:'fa-circle-xmark text-red-400',info:'fa-circle-info text-blue-400',warn:'fa-triangle-exclamation text-yellow-400'};
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-icon').className='fa-solid '+(icons[type]||icons.info);
+  const t=document.getElementById('toast');t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3500);
+}
+
+async function api(path,opts={}){
+  const res=await fetch(BASE+path,{headers:{'Authorization':'Bearer '+token(),'Content-Type':'application/json',...(opts.headers||{})},...opts});
+  if(!res.ok){const txt=await res.text();throw new Error(txt||res.status);}
+  if(res.status===204)return null;
+  return res.json();
+}
+
+const fmt=n=>Number(n||0).toLocaleString('fr-TN',{minimumFractionDigits:0,maximumFractionDigits:0})+' TND';
+const toStr=d=>d.toISOString().split('T')[0];
+
+function openModal(msg,cb){document.getElementById('modal-msg').textContent=msg;modalCallback=cb;document.getElementById('modal').classList.remove('hidden');}
+function closeModal(){document.getElementById('modal').classList.add('hidden');modalCallback=null;}
+function confirmAction(){if(modalCallback)modalCallback();closeModal();}
+
+function showTab(name){
+  const tabs=['account','txn','goals','analytics','ai'];
+  tabs.forEach(t=>{
+    document.getElementById('tab-'+t+'-content').classList.toggle('hidden',t!==name);
+    document.getElementById('tab-'+t).className=t===name
+      ?'whitespace-nowrap py-3 px-3 text-sm border-b-2 border-green-600 text-green-700 font-semibold -mb-px'
+      :'whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px';
+  });
+  if(name==='txn')loadTxns();
+  if(name==='goals')loadGoals();
+}
+
+// ══════ COMPTE ══════════════════════════════════════
+async function loadAccount(){
+  try{
+    const a=await api('/api/savings/accounts/me');
+    const statusStyle=a.status==='ACTIVE'?'bg-green-100 text-green-700':'bg-red-100 text-red-700';
+    document.getElementById('account-info').innerHTML=`
+      <div class="fade-in">
+        <div class="text-center mb-4">
+          <div class="text-3xl font-bold text-gray-800">${fmt(a.currentBalance)}</div>
+          <div class="text-sm text-gray-400 mt-1">Solde actuel</div>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-gray-500">Nom</span><span class="font-medium text-gray-700">${a.accountName||'—'}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Statut</span><span class="px-2 py-0.5 rounded-full text-xs ${statusStyle}">${a.status}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Objectif mensuel</span><span class="font-medium">${fmt(a.monthlySavingsTarget)}</span></div>
+          ${a.goalAmount?`<div class="flex justify-between"><span class="text-gray-500">Total objectifs</span><span class="font-medium">${fmt(a.goalAmount)}</span></div>`:''}
+          ${a.goalTitle?`<div class="p-2 bg-gray-50 rounded-lg text-xs text-gray-600 mt-2">${a.goalTitle}</div>`:''}
+          <div class="flex justify-between text-xs text-gray-400"><span>Créé</span><span>${a.createdAt?.split('T')[0]||'—'}</span></div>
+        </div>
+      </div>`;
+    document.getElementById('acc-name').value=a.accountName||'';
+    document.getElementById('acc-target').value=a.monthlySavingsTarget||'';
+    document.getElementById('acc-status').value=a.status||'ACTIVE';
+  }catch(e){
+    document.getElementById('account-info').innerHTML=`<p class="text-sm text-gray-400 text-center py-8">Aucun compte trouvé — créez-en un ci-contre</p>`;
+  }
+}
+
+async function createAccount(){
+  const body={accountName:document.getElementById('acc-name').value,monthlySavingsTarget:parseFloat(document.getElementById('acc-target').value)||0};
+  if(!body.accountName){toast('Nom du compte requis','warn');return;}
+  try{await api('/api/savings/accounts',{method:'POST',body:JSON.stringify(body)});toast('Compte créé','success');loadAccount();}
+  catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function updateAccount(){
+  const body={accountName:document.getElementById('acc-name').value,monthlySavingsTarget:parseFloat(document.getElementById('acc-target').value)||0,status:document.getElementById('acc-status').value};
+  try{await api('/api/savings/accounts/me',{method:'PUT',body:JSON.stringify(body)});toast('Compte mis à jour','success');loadAccount();}
+  catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ TRANSACTIONS ══════════════════════════════════
+function setTxnType(type){
+  document.getElementById('txn-type').value=type;
+  const isDeposit=type==='DEPOSIT';
+  document.getElementById('btn-deposit').className='py-2 rounded-lg text-sm font-medium border-2 '+(isDeposit?'bg-green-100 text-green-700 border-green-400':'bg-gray-100 text-gray-600 border-transparent');
+  document.getElementById('btn-withdraw').className='py-2 rounded-lg text-sm font-medium border-2 '+(isDeposit?'bg-gray-100 text-gray-600 border-transparent':'bg-red-100 text-red-700 border-red-400');
+}
+
+async function doTransaction(){
+  const body={type:document.getElementById('txn-type').value,amount:parseFloat(document.getElementById('txn-amount').value),description:document.getElementById('txn-desc').value};
+  if(!body.amount){toast('Montant requis','warn');return;}
+  try{
+    await api('/api/savings/transactions',{method:'POST',body:JSON.stringify(body)});
+    toast(body.type==='DEPOSIT'?'Dépôt effectué':'Retrait effectué','success');
+    document.getElementById('txn-amount').value='';
+    document.getElementById('txn-desc').value='';
+    loadTxns(); loadAccount();
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function loadTxns(){
+  const type=document.getElementById('txn-filter').value;
+  let url='/api/savings/transactions'+(type?'?type='+type:'');
+  document.getElementById('txn-list').innerHTML='<div class="skeleton h-12 rounded-xl"></div>'.repeat(3);
+  try{
+    const data=await api(url);
+    const txns=Array.isArray(data)?data:(data.content||[]);
+    if(!txns.length){document.getElementById('txn-list').innerHTML='<p class="text-sm text-gray-400 text-center py-8">Aucune transaction</p>';return;}
+    document.getElementById('txn-list').innerHTML=txns.map(t=>`
+      <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50 fade-in">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center ${t.type==='DEPOSIT'?'bg-green-100 text-green-600':'bg-red-100 text-red-600'}">
+          <i class="fa-solid ${t.type==='DEPOSIT'?'fa-arrow-down':'fa-arrow-up'} text-xs"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-gray-800 truncate">${t.description||'—'}</div>
+          <div class="text-xs text-gray-400">${(t.occurredAt||'').split('T')[0]}</div>
+        </div>
+        <div class="text-sm font-bold ${t.type==='DEPOSIT'?'text-green-600':'text-red-600'}">${t.type==='DEPOSIT'?'+':'−'}${fmt(t.amount)}</div>
+      </div>`).join('');
+  }catch(e){toast('Erreur transactions : '+e.message,'error');}
+}
+
+async function simulateWithdraw(){
+  const amount=parseFloat(document.getElementById('sim-amount').value);
+  if(!amount){toast('Montant requis','warn');return;}
+  try{
+    const d=await api('/api/savings/accounts/simulate/withdraw',{method:'POST',body:JSON.stringify({amount})});
+    const el=document.getElementById('sim-result');
+    el.classList.remove('hidden');
+    el.innerHTML=`
+      <div class="p-3 ${d.isAllowed?'bg-green-50 border-green-200':'bg-red-50 border-red-200'} border rounded-xl fade-in">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fa-solid ${d.isAllowed?'fa-circle-check text-green-500':'fa-circle-xmark text-red-500'}"></i>
+          <span class="text-sm font-semibold ${d.isAllowed?'text-green-700':'text-red-700'}">${d.message||''}</span>
+        </div>
+        <div class="text-xs space-y-1">
+          <div>Solde actuel : <strong>${fmt(d.currentBalance)}</strong></div>
+          <div>Après retrait : <strong class="${d.isAllowed?'text-green-600':'text-red-600'}">${fmt(d.balanceAfterWithdrawal)}</strong></div>
+          ${d.goalAmount?`<div>Impact objectif : <strong>${fmt(d.goalImpact)}</strong> restant</div>`:''}
+        </div>
+      </div>`;
+  }catch(e){toast('Erreur simulation : '+e.message,'error');}
+}
+
+// ══════ OBJECTIFS ══════════════════════════════════════
+const allocColor={AUTO_PROPORTIONAL:'bg-gray-100 text-gray-600',AUTO_PRIORITY:'bg-blue-100 text-blue-700',CUSTOM_PERCENTAGE:'bg-purple-100 text-purple-700'};
+
+function resetGoalForm(){
+  document.getElementById('goal-id').value='';
+  document.getElementById('goal-form-title').textContent='Nouvel Objectif';
+  document.getElementById('goal-name').value='';
+  document.getElementById('goal-target').value='';
+  document.getElementById('goal-date').value='';
+  document.getElementById('goal-desc').value='';
+}
+
+async function loadGoals(){
+  document.getElementById('goals-list').innerHTML='<div class="skeleton h-20 rounded-xl"></div>'.repeat(2);
+  try{
+    const data=await api('/api/savings/goals');
+    const goals=Array.isArray(data)?data:(data.content||[]);
+    if(!goals.length){document.getElementById('goals-list').innerHTML='<p class="text-sm text-gray-400 text-center py-6">Aucun objectif actif</p>';return;}
+    document.getElementById('goals-list').innerHTML=goals.map(g=>{
+      const pct=Math.min(100,g.progressPercentage||0);
+      return `
+      <div class="p-4 rounded-xl border border-gray-100 bg-gray-50 fade-in">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <span class="font-semibold text-gray-800 text-sm">${g.goalName}</span>
+            ${g.allocationMode?`<span class="ml-2 text-xs px-2 py-0.5 rounded-full ${allocColor[g.allocationMode]||'bg-gray-100 text-gray-500'}">${g.allocationMode}</span>`:''}
+            ${g.priority>0?`<span class="ml-1 text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">P${g.priority}</span>`:''}
+          </div>
+          <span class="${g.achieved?'text-green-600 bg-green-50':'text-gray-500 bg-gray-100'} text-xs px-2 py-0.5 rounded-full">${g.achieved?'✓ Atteint':'En cours'}</span>
+        </div>
+        <div class="h-2 bg-gray-200 rounded-full mb-2">
+          <div class="h-full rounded-full ${pct>=100?'bg-green-500':pct>=60?'bg-blue-500':'bg-orange-400'} transition-all" style="width:${pct}%"></div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <span>${fmt(g.currentAmount)} / ${fmt(g.targetAmount)}</span>
+          <span class="font-semibold">${pct.toFixed(0)}%</span>
+          <span>Échéance: ${g.targetDate||'—'}</span>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="editGoal(${JSON.stringify(g).replace(/"/g,'&quot;')})" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100"><i class="fa-solid fa-pen mr-1"></i>Modifier</button>
+          ${g.achieved?`<button onclick="collectGoal('${g.id}')" class="px-2 py-1 bg-green-50 text-green-600 rounded-lg text-xs hover:bg-green-100"><i class="fa-solid fa-box-archive mr-1"></i>Collecter</button>`:''}
+          <button onclick="setPrioFromGoal('${g.id}')" class="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs hover:bg-purple-100"><i class="fa-solid fa-sliders mr-1"></i>Allocation</button>
+          <button onclick="deleteGoal('${g.id}')" class="px-2 py-1 bg-red-50 text-red-500 rounded-lg text-xs hover:bg-red-100"><i class="fa-solid fa-trash mr-1"></i>Supprimer</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){toast('Erreur objectifs : '+e.message,'error');}
+}
+
+function editGoal(g){
+  document.getElementById('goal-form-title').textContent='Modifier Objectif';
+  document.getElementById('goal-id').value=g.id;
+  document.getElementById('goal-name').value=g.goalName;
+  document.getElementById('goal-target').value=g.targetAmount;
+  document.getElementById('goal-date').value=g.targetDate||'';
+  document.getElementById('goal-desc').value=g.description||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setPrioFromGoal(id){
+  document.getElementById('prio-goal-id').value=id;
+  document.getElementById('prio-val').focus();
+}
+
+async function saveGoal(){
+  const id=document.getElementById('goal-id').value;
+  const body={goalName:document.getElementById('goal-name').value,targetAmount:parseFloat(document.getElementById('goal-target').value),targetDate:document.getElementById('goal-date').value,description:document.getElementById('goal-desc').value};
+  if(!body.goalName||!body.targetAmount){toast('Nom et montant requis','warn');return;}
+  try{
+    if(id){await api('/api/savings/goals/'+id,{method:'PUT',body:JSON.stringify(body)});toast('Objectif modifié','success');}
+    else{await api('/api/savings/goals',{method:'POST',body:JSON.stringify(body)});toast('Objectif créé','success');}
+    resetGoalForm();loadGoals();loadAccount();
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function deleteGoal(id){
+  openModal('Supprimer cet objectif ?',async()=>{
+    try{await api('/api/savings/goals/'+id,{method:'DELETE'});toast('Supprimé','success');loadGoals();loadAccount();}
+    catch(e){toast('Erreur : '+e.message,'error');}
+  });
+}
+
+async function collectGoal(id){
+  openModal('Marquer cet objectif comme collecté et l\'archiver ?',async()=>{
+    try{await api('/api/savings/goals/'+id+'/collect',{method:'POST'});toast('Objectif collecté et archivé','success');loadGoals();loadAccount();}
+    catch(e){toast('Erreur : '+e.message,'error');}
+  });
+}
+
+async function loadArchive(){
+  try{
+    const data=await api('/api/savings/goals/archive');
+    const goals=Array.isArray(data)?data:[];
+    document.getElementById('archive-list').innerHTML=goals.length?goals.map(g=>`
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm fade-in">
+        <div class="flex justify-between items-center">
+          <span class="font-medium text-gray-700">${g.goalName}</span>
+          <span class="text-xs text-gray-400">Collecté: ${(g.collectedAt||'').split('T')[0]||'—'}</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-1">Montant: ${fmt(g.targetAmount)}</div>
+      </div>`).join(''):
+      '<p class="text-sm text-gray-400 text-center py-4">Aucun objectif archivé</p>';
+  }catch(e){toast('Erreur archive : '+e.message,'error');}
+}
+
+async function setPriority(){
+  const id=document.getElementById('prio-goal-id').value.trim();
+  if(!id){toast('ID objectif requis','warn');return;}
+  const prio=parseInt(document.getElementById('prio-val').value)||0;
+  const pct=document.getElementById('prio-pct').value;
+  const body={priority:prio};
+  if(pct)body.customAllocationPercentage=parseFloat(pct);
+  try{await api('/api/savings/goals/'+id+'/priority',{method:'PATCH',body:JSON.stringify(body)});toast('Allocation mise à jour','success');loadGoals();}
+  catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function resetPriority(){
+  const id=document.getElementById('prio-goal-id').value.trim();
+  if(!id){toast('ID objectif requis','warn');return;}
+  try{await api('/api/savings/goals/'+id+'/priority',{method:'PATCH',body:JSON.stringify({resetToAuto:true})});toast('Mode automatique rétabli','success');loadGoals();}
+  catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ ANALYTICS ══════════════════════════════════════
+async function loadSavingsAnalytics(){
+  // Goal progress
+  try{
+    const g=await api('/api/savings/accounts/goal/progress');
+    const pct=Math.min(100,g.progressPercentage||0);
+    const statusColor={Completed:'text-green-600','Near Goal':'text-blue-600','In Progress':'text-orange-500','Just Started':'text-gray-500'};
+    document.getElementById('goal-progress').innerHTML=`
+      <div class="fade-in">
+        <div class="text-center mb-3">
+          <div class="text-lg font-bold text-gray-800">${g.goalTitle||'—'}</div>
+          <div class="text-xs text-gray-400">${fmt(g.currentBalance)} / ${fmt(g.goalAmount)}</div>
+        </div>
+        <div class="h-3 bg-gray-100 rounded-full mb-2">
+          <div class="h-full rounded-full ${pct>=100?'bg-green-500':pct>=75?'bg-blue-500':pct>=25?'bg-orange-400':'bg-gray-400'}" style="width:${pct}%"></div>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="font-bold ${statusColor[g.status]||'text-gray-600'}">${g.status}</span>
+          <span class="font-bold text-gray-800">${pct.toFixed(1)}%</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Reste : ${fmt(g.remaining)}</div>
+      </div>`;
+  }catch(e){document.getElementById('goal-progress').innerHTML=`<p class="text-xs text-red-400">${e.message}</p>`;}
+
+  // Recommendation
+  try{
+    const r=await api('/api/savings/accounts/recommendation');
+    const recos=r.recommendations||[];
+    document.getElementById('recommendation-box').innerHTML=`
+      <div class="fade-in space-y-3">
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="p-2 bg-green-50 rounded-lg"><div class="text-gray-500">Revenus/mois</div><div class="font-bold text-green-700">${fmt(r.monthlyIncome)}</div></div>
+          <div class="p-2 bg-red-50 rounded-lg"><div class="text-gray-500">Dépenses/mois</div><div class="font-bold text-red-600">${fmt(r.monthlyExpenses)}</div></div>
+          <div class="p-2 bg-blue-50 rounded-lg col-span-2"><div class="text-gray-500">Épargne recommandée/mois</div><div class="font-bold text-blue-700">${fmt(r.recommendedMonthlySavings)}</div></div>
+        </div>
+        ${recos.map(rec=>`<div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-800"><i class="fa-solid fa-lightbulb mr-1 text-yellow-500"></i>${rec.recommendation}</div>`).join('')}
+      </div>`;
+  }catch(e){document.getElementById('recommendation-box').innerHTML=`<p class="text-xs text-red-400">${e.message}</p>`;}
+
+  // Savings alerts
+  try{
+    const a=await api('/api/savings/accounts/alerts');
+    const alerts=a.alerts||[];
+    const sevStyle={WARNING:'bg-yellow-50 border-yellow-200 text-yellow-800',INFO:'bg-blue-50 border-blue-200 text-blue-800'};
+    document.getElementById('savings-alerts').innerHTML=alerts.length?alerts.map(al=>`
+      <div class="p-3 rounded-xl border fade-in ${sevStyle[al.severity]||'bg-gray-50 border-gray-200'}">
+        <div class="font-semibold text-sm">${al.type}</div>
+        <div class="text-xs mt-0.5">${al.message}</div>
+        ${al.value!=null?`<div class="text-xs font-bold mt-1">${fmt(al.value)}</div>`:''}
+      </div>`).join(''):
+      '<div class="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700"><i class="fa-solid fa-circle-check mr-1"></i>Aucune alerte — tout va bien !</div>';
+  }catch(e){document.getElementById('savings-alerts').innerHTML=`<p class="text-xs text-red-400">${e.message}</p>`;}
+
+  // Monthly summary
+  try{
+    const months=document.getElementById('monthly-months').value;
+    const ms=await api('/api/savings/accounts/summary/monthly?months='+months);
+    const rows=(ms.monthlyData||[]).map(m=>`
+      <tr class="hover:bg-gray-50 border-b border-gray-50">
+        <td class="py-1.5 px-2 text-xs text-gray-600">${m.month}</td>
+        <td class="py-1.5 px-2 text-xs text-right text-green-600">${fmt(m.deposits)}</td>
+        <td class="py-1.5 px-2 text-xs text-right text-red-500">${fmt(m.withdrawals)}</td>
+        <td class="py-1.5 px-2 text-xs text-right font-bold ${m.netChange>=0?'text-blue-600':'text-red-600'}">${fmt(m.netChange)}</td>
+      </tr>`).join('');
+    document.getElementById('monthly-summary').innerHTML=`
+      <table class="w-full text-xs mb-2">
+        <thead><tr class="border-b border-gray-100"><th class="py-1 px-2 text-left text-gray-400">Mois</th><th class="py-1 px-2 text-right text-gray-400">Dépôts</th><th class="py-1 px-2 text-right text-gray-400">Retraits</th><th class="py-1 px-2 text-right text-gray-400">Net</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="text-xs text-gray-500">Total dépôts: <strong>${fmt(ms.totalDeposits)}</strong> · Total retraits: <strong>${fmt(ms.totalWithdrawals)}</strong></div>`;
+  }catch(e){document.getElementById('monthly-summary').innerHTML=`<p class="text-xs text-red-400">${e.message}</p>`;}
+
+  // Statement
+  const from=document.getElementById('stmt-from').value;
+  const to=document.getElementById('stmt-to').value;
+  if(from&&to){
+    try{
+      const stmt=await api(`/api/savings/accounts/statement?from=${from}&to=${to}`);
+      const txns=(stmt.transactions||[]).map(t=>`
+        <tr class="hover:bg-gray-50 border-b border-gray-50">
+          <td class="py-1.5 px-3 text-xs">${(t.occurredAt||'').split('T')[0]}</td>
+          <td class="py-1.5 px-3 text-xs"><span class="${t.type==='DEPOSIT'?'text-green-600':'text-red-500'}">${t.type}</span></td>
+          <td class="py-1.5 px-3 text-xs text-gray-600">${t.description||'—'}</td>
+          <td class="py-1.5 px-3 text-xs text-right font-semibold ${t.type==='DEPOSIT'?'text-green-600':'text-red-500'}">${t.type==='DEPOSIT'?'+':'−'}${fmt(t.amount)}</td>
+        </tr>`).join('');
+      document.getElementById('statement-box').innerHTML=`
+        <div class="grid grid-cols-4 gap-3 mb-4 text-center text-xs fade-in">
+          <div class="p-2 bg-gray-50 rounded-lg"><div class="text-gray-400">Solde ouverture</div><div class="font-bold">${fmt(stmt.openingBalance)}</div></div>
+          <div class="p-2 bg-green-50 rounded-lg"><div class="text-green-500">Dépôts</div><div class="font-bold text-green-700">${fmt(stmt.totalDeposits)}</div></div>
+          <div class="p-2 bg-red-50 rounded-lg"><div class="text-red-500">Retraits</div><div class="font-bold text-red-600">${fmt(stmt.totalWithdrawals)}</div></div>
+          <div class="p-2 bg-blue-50 rounded-lg"><div class="text-blue-500">Solde clôture</div><div class="font-bold text-blue-700">${fmt(stmt.closingBalance)}</div></div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-100"><th class="py-2 px-3 text-left text-xs text-gray-400">Date</th><th class="py-2 px-3 text-left text-xs text-gray-400">Type</th><th class="py-2 px-3 text-left text-xs text-gray-400">Description</th><th class="py-2 px-3 text-right text-xs text-gray-400">Montant</th></tr></thead>
+            <tbody>${txns}</tbody>
+          </table>
+        </div>`;
+    }catch(e){document.getElementById('statement-box').innerHTML=`<p class="text-xs text-red-400">Erreur relevé : ${e.message}</p>`;}
+  }else{
+    document.getElementById('statement-box').innerHTML='<p class="text-sm text-gray-400 text-center py-4">Sélectionnez une période pour afficher le relevé</p>';
+  }
+}
+
+// ══════ IA ÉPARGNE ══════════════════════════════════════
+async function loadGoalPrediction(){
+  document.getElementById('goal-predictions').innerHTML='<div class="skeleton h-24 rounded-xl"></div>'.repeat(2);
+  document.getElementById('scenarios-box').classList.add('hidden');
+  document.getElementById('prediction-meta').classList.add('hidden');
+  try{
+    const d=await api('/api/ai/savings/goal/predict-achievement');
+    const metaEl=document.getElementById('prediction-meta');
+    metaEl.classList.remove('hidden');
+    metaEl.innerHTML=`Épargne moy. : <strong>${fmt(d.averageMonthlySavings)}/mois</strong> · ${d.monthsAnalyzed} mois analysés · ${d.dataExplanation||''}`;
+
+    const statusCfg={ON_TRACK:{color:'text-green-700',bg:'bg-green-50 border-green-200',icon:'fa-circle-check text-green-500'},AT_RISK:{color:'text-orange-700',bg:'bg-orange-50 border-orange-200',icon:'fa-triangle-exclamation text-orange-500'},ACHIEVED:{color:'text-blue-700',bg:'bg-blue-50 border-blue-200',icon:'fa-trophy text-blue-500'},BLOCKED:{color:'text-red-700',bg:'bg-red-50 border-red-200',icon:'fa-circle-xmark text-red-500'}};
+    const predictions=d.goalPredictions||[];
+    document.getElementById('goal-predictions').innerHTML=predictions.length?predictions.map(p=>{
+      const cfg=statusCfg[p.status]||{color:'text-gray-700',bg:'bg-gray-50 border-gray-200',icon:'fa-circle text-gray-400'};
+      const pct=Math.min(100,p.progressPercentage||0);
+      return `
+      <div class="p-4 rounded-2xl border ${cfg.bg} fade-in">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <span class="font-bold text-gray-800">${p.goalName}</span>
+            ${p.allocationMode?`<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-500">${p.allocationMode}</span>`:''}
+          </div>
+          <div class="flex items-center gap-1">
+            <i class="fa-solid ${cfg.icon}"></i>
+            <span class="text-xs font-semibold ${cfg.color}">${p.status}</span>
+          </div>
+        </div>
+        <div class="h-2 bg-white rounded-full mb-2 border border-gray-200">
+          <div class="h-full rounded-full ${pct>=100?'bg-green-500':pct>=60?'bg-blue-500':'bg-orange-400'}" style="width:${pct}%"></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-2">
+          <div class="p-2 bg-white rounded-lg border border-gray-100 text-center"><div class="text-gray-400">Progression</div><div class="font-bold">${pct.toFixed(0)}%</div></div>
+          <div class="p-2 bg-white rounded-lg border border-gray-100 text-center"><div class="text-gray-400">Contribution/mois</div><div class="font-bold">${fmt(p.estimatedMonthlyContribution)}</div></div>
+          <div class="p-2 bg-white rounded-lg border border-gray-100 text-center"><div class="text-gray-400">Mois restants</div><div class="font-bold">${p.estimatedMonthsToComplete||'∞'}</div></div>
+          <div class="p-2 bg-white rounded-lg border border-gray-100 text-center"><div class="text-gray-400">Date estimée</div><div class="font-bold text-xs">${p.estimatedCompletionDate||'—'}</div></div>
+        </div>
+        <div class="text-xs text-gray-600 italic">${p.statusDetail||''}</div>
+      </div>`;
+    }).join(''):'<p class="text-sm text-gray-400 text-center py-6">Aucun objectif actif</p>';
+
+    // Scénarios
+    const scenarios=d.scenarios||[];
+    if(scenarios.length){
+      document.getElementById('scenarios-box').classList.remove('hidden');
+      const scenColor=['bg-gray-50 border-gray-200','bg-green-50 border-green-200','bg-orange-50 border-orange-200'];
+      document.getElementById('scenarios-grid').innerHTML=scenarios.map((s,i)=>`
+        <div class="p-4 rounded-xl border ${scenColor[i]||'bg-gray-50 border-gray-200'} text-center">
+          <div class="font-semibold text-sm text-gray-700 mb-2">${s.name}</div>
+          <div class="text-lg font-bold text-gray-800">${fmt(s.monthlySavings)}/mois</div>
+          <div class="text-xs text-gray-500 mt-1">${s.monthsRequired} mois · ${s.achievementDate||'—'}</div>
+          <div class="text-xs text-gray-400 mt-1 italic">${s.description||''}</div>
+        </div>`).join('');
+    }
+    toast('Prédiction chargée','success');
+  }catch(e){toast('Erreur prédiction : '+e.message,'error');document.getElementById('goal-predictions').innerHTML=`<p class="text-sm text-red-400 text-center py-6">${e.message}</p>`;}
+}
+
+async function assessRisk(){
+  const amount=parseFloat(document.getElementById('risk-amount').value);
+  if(!amount){toast('Montant requis','warn');return;}
+  try{
+    const d=await api('/api/ai/savings/withdrawal/risk-assessment',{method:'POST',body:JSON.stringify({amount})});
+    const riskColor={LOW:'text-green-600 bg-green-50',MEDIUM:'text-yellow-600 bg-yellow-50',HIGH:'text-orange-600 bg-orange-50',CRITICAL:'text-red-600 bg-red-50'};
+    const gauge=Math.min(10,d.riskScore||0);
+    const factors=[d.goalImpact,d.expenseCoverage,d.bufferAnalysis,d.savingsHistory].filter(Boolean);
+    document.getElementById('risk-result').innerHTML=`
+      <div class="fade-in space-y-3">
+        <div class="p-4 rounded-xl ${riskColor[d.riskLevel]||'bg-gray-50'} border text-center">
+          <div class="text-3xl font-bold mb-1">${gauge}/10</div>
+          <div class="font-semibold">${d.riskLevel}</div>
+          <div class="text-xs mt-1 opacity-75">${d.recommendation||''}</div>
+        </div>
+        <div class="h-2.5 bg-gray-100 rounded-full">
+          <div class="h-full rounded-full ${gauge>=8?'bg-red-500':gauge>=6?'bg-orange-400':gauge>=4?'bg-yellow-400':'bg-green-500'}" style="width:${gauge*10}%"></div>
+        </div>
+        <div class="space-y-2">${factors.map(f=>`
+          <div class="flex justify-between items-center text-xs p-2 bg-gray-50 rounded-lg">
+            <span class="text-gray-600">${f.name} <span class="text-gray-400">(${((f.weight||0)*100).toFixed(0)}%)</span></span>
+            <span class="font-bold">${f.score}/10</span>
+          </div>`).join('')}</div>
+        ${(d.warnings||[]).length?`<div class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">${(d.warnings||[]).map(w=>`<div>• ${w}</div>`).join('')}</div>`:''}
+      </div>`;
+  }catch(e){toast('Erreur évaluation : '+e.message,'error');}
+}
+
+async function loadSmartPlan(){
+  try{
+    const d=await api('/api/ai/savings/plan/smart');
+    const metaEl=document.getElementById('smart-plan-meta');
+    metaEl.classList.remove('hidden');
+    metaEl.innerHTML=`Objectif : <strong>${fmt(d.goalAmount)}</strong> · Solde actuel : <strong>${fmt(d.currentBalance)}</strong> · Reste : <strong>${fmt(d.remaining)}</strong> · Épargne moy. conseillée : <strong>${fmt(d.recommendedMonthlySavings)}/mois</strong>`;
+    const plan=d.monthlyPlan||[];
+    const noteColor={favorable:'text-green-600',difficile:'text-red-500',normal:'text-gray-500'};
+    document.getElementById('smart-plan-body').innerHTML=plan.map(m=>{
+      const noteKey=Object.keys(noteColor).find(k=>(m.seasonalNote||'').toLowerCase().includes(k))||'normal';
+      return `
+      <tr class="hover:bg-gray-50 border-b border-gray-50">
+        <td class="py-2 px-3 text-sm font-medium text-gray-700">${m.month}</td>
+        <td class="py-2 px-3 text-right text-sm font-bold text-green-600">${fmt(m.recommendedSavings)}</td>
+        <td class="py-2 px-3 text-right text-sm text-gray-700">${fmt(m.projectedBalance)}</td>
+        <td class="py-2 px-3 text-right text-sm">
+          <span class="text-xs">${(m.progressPercentage||0).toFixed(1)}%</span>
+          <div class="h-1.5 bg-gray-100 rounded-full mt-0.5 w-16 ml-auto"><div class="h-full rounded-full bg-green-400" style="width:${Math.min(100,m.progressPercentage||0)}%"></div></div>
+        </td>
+        <td class="py-2 px-3 text-xs ${noteColor[noteKey]||'text-gray-500'}">${m.seasonalNote||'—'}</td>
+      </tr>`;
+    }).join('');
+    toast('Plan chargé','success');
+  }catch(e){toast('Erreur plan : '+e.message,'error');}
+}
+
+async function loadEmergencyFund(){
+  try{
+    const d=await api('/api/ai/savings/emergency-fund');
+    const levelColor={NONE:'bg-red-100 text-red-700 border-red-300',LOW:'bg-orange-100 text-orange-700 border-orange-300',MODERATE:'bg-yellow-100 text-yellow-700 border-yellow-300',GOOD:'bg-blue-100 text-blue-700 border-blue-300',EXCELLENT:'bg-green-100 text-green-700 border-green-300'};
+    const lc=levelColor[d.protectionLevel]||'bg-gray-100 text-gray-600 border-gray-300';
+    const monthlyRows=(d.monthlyExpenseDetails||[]).map(m=>`
+      <tr class="hover:bg-gray-50"><td class="py-1.5 px-3 text-xs text-gray-600">${m.month}</td><td class="py-1.5 px-3 text-xs text-right font-medium text-red-600">${fmt(m.totalExpenses)}</td><td class="py-1.5 px-3 text-xs text-right text-gray-400">${m.numberOfEntries} écriture(s)</td></tr>`).join('');
+    document.getElementById('emergency-fund-content').innerHTML=`
+      <div class="fade-in space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-xs">
+          <div class="p-3 ${lc} border rounded-xl">
+            <div class="font-bold text-lg">${d.protectionLevel}</div>
+            <div>${(d.coverageMonths||0).toFixed(1)} mois couverts</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div class="text-gray-500 mb-0.5">Dépenses moy./mois</div>
+            <div class="font-bold text-gray-800">${fmt(d.averageMonthlyExpenses)}</div>
+          </div>
+          <div class="p-3 bg-orange-50 rounded-xl border border-orange-200">
+            <div class="text-orange-500 mb-0.5">Minimum (3 mois)</div>
+            <div class="font-bold text-orange-700">${fmt(d.recommendedMinimum)}</div>
+          </div>
+          <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+            <div class="text-green-500 mb-0.5">Optimal (6 mois)</div>
+            <div class="font-bold text-green-700">${fmt(d.recommendedOptimal)}</div>
+          </div>
+        </div>
+        <div class="p-4 bg-white border border-gray-100 rounded-xl text-sm">
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-500">Épargne actuelle</span>
+            <span class="font-bold">${fmt(d.currentSavings)}</span>
+          </div>
+          <div class="h-3 bg-gray-100 rounded-full">
+            <div class="h-full rounded-full ${d.protectionLevel==='EXCELLENT'?'bg-green-500':d.protectionLevel==='GOOD'?'bg-blue-500':d.protectionLevel==='MODERATE'?'bg-yellow-400':'bg-red-400'}"
+              style="width:${Math.min(100,(d.protectionPercentage||0))}%"></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <span>0</span><span>Min (${fmt(d.recommendedMinimum)})</span><span>Optimal (${fmt(d.recommendedOptimal)})</span>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 bg-orange-50 border border-orange-200 rounded-xl">
+            <div class="text-orange-600 font-semibold mb-1">Pour atteindre le minimum en 6 mois</div>
+            <div class="text-lg font-bold text-orange-700">${fmt(d.monthlyContributionNeeded3Months)}/mois</div>
+            ${d.deficit>0?`<div class="text-gray-500 mt-1">Manque : ${fmt(d.deficit)}</div>`:''}
+          </div>
+          <div class="p-3 bg-green-50 border border-green-200 rounded-xl">
+            <div class="text-green-600 font-semibold mb-1">Pour atteindre l'optimal en 6 mois</div>
+            <div class="text-lg font-bold text-green-700">${fmt(d.monthlyContributionNeeded6Months)}/mois</div>
+          </div>
+        </div>
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+          <i class="fa-solid fa-lightbulb mr-1 text-blue-500"></i>${d.recommendation}
+        </div>
+        <details class="bg-gray-50 rounded-xl border border-gray-100">
+          <summary class="px-4 py-3 cursor-pointer text-sm font-medium text-gray-700">Détail mensuel des dépenses (${d.monthsWithExpenseData} mois)</summary>
+          <div class="overflow-x-auto px-2 pb-3">
+            <table class="w-full text-sm"><thead><tr class="border-b border-gray-100">
+              <th class="py-2 px-3 text-left text-xs text-gray-400">Mois</th>
+              <th class="py-2 px-3 text-right text-xs text-gray-400">Dépenses</th>
+              <th class="py-2 px-3 text-right text-xs text-gray-400">Écritures</th>
+            </tr></thead><tbody>${monthlyRows}</tbody></table>
+          </div>
+        </details>
+      </div>`;
+    toast('Fonds d\'urgence analysé','success');
+  }catch(e){toast('Erreur fonds urgence : '+e.message,'error');document.getElementById('emergency-fund-content').innerHTML=`<p class="text-sm text-red-400 text-center py-6">${e.message}</p>`;}
+}
+
+async function loadAllAI(){
+  await Promise.all([loadGoalPrediction(),loadSmartPlan(),loadEmergencyFund()]);
+}
+
+// Init
+updateTokenStatus();
+const today=new Date();const threeAgo=new Date();threeAgo.setMonth(today.getMonth()-3);
+const toStr2=d=>d.toISOString().split('T')[0];
+document.getElementById('stmt-from').value=toStr2(threeAgo);
+document.getElementById('stmt-to').value=toStr2(today);
+loadAccount();
+</script>
+</body>
+</html>

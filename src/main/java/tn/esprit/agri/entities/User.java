@@ -13,10 +13,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -34,6 +36,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "first_name")
@@ -44,7 +47,6 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
     private Role role = Role.FARMER;
 
     @Column(name = "profile_image")
@@ -54,7 +56,6 @@ public class User implements UserDetails {
     private String idCardImage;
 
     @Column(nullable = false)
-    @Builder.Default
     private Float score = 50.0f;
 
     @Column(name = "phone_number")
@@ -62,9 +63,14 @@ public class User implements UserDetails {
 
     private String address;
 
+    @Column(name = "account_balance")
+    private Double accountBalance = 0.0;
+
+    @Column(name = "expert_fund_id")
+    private String expertFundId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
     private Status status = Status.ACTIVE;
 
     @CreationTimestamp
@@ -77,13 +83,25 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    @Builder.Default
     private Set<Crop> crops = new HashSet<>();
+
+    @Lob
+    @Column(name = "face_ref_image", columnDefinition = "LONGBLOB")
+    private byte[] faceRefImage;
+
+    @Column(name = "face_enabled", nullable = false)
+    private boolean faceEnabled = false;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) return List.of();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+        // ADMIN inherits all FARMER permissions
+        if (this.role == Role.ADMIN) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_FARMER"));
+        }
+        return authorities;
     }
 
     @Override

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IA Comptabilité — AgriProtect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .fade-in{animation:fadeIn .35s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    input[type=range]{accent-color:#16a34a}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+<!-- NAV -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+    <div class="flex items-center gap-2 text-green-700 font-bold text-lg"><i class="fa-solid fa-leaf"></i> AgriProtect</div>
+    <div class="flex gap-1">
+      <a href="dashboard.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-gauge-high mr-1"></i>Dashboard</a>
+      <a href="accounting.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-book mr-1"></i>Comptabilité</a>
+      <a href="accounting-ai.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-700"><i class="fa-solid fa-brain mr-1"></i>IA Comptabilité</a>
+      <a href="savings.html" class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"><i class="fa-solid fa-piggy-bank mr-1"></i>Épargne</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="toggleToken()" class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"><i class="fa-solid fa-key"></i> Token</button>
+      <span id="token-status" class="w-2 h-2 rounded-full bg-red-400"></span>
+    </div>
+  </div>
+  <div id="token-panel" class="hidden border-t bg-gray-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex gap-2">
+      <input id="token-input" type="text" placeholder="Collez votre JWT Bearer token ici..." class="flex-1 text-xs border border-gray-300 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-green-400">
+      <button onclick="saveToken()" class="px-4 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700">Enregistrer</button>
+      <button onclick="clearToken()" class="px-4 py-2 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200">Supprimer</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-6">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fa-solid fa-brain"></i> IA Comptabilité</h1>
+    <p class="text-green-100 text-sm mt-1">Analyse prédictive · Simulation · Intelligence Artificielle</p>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="bg-white border-b border-gray-200 sticky top-14 z-40">
+  <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+    <button onclick="showTab('health')" id="tab-health" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-green-600 text-green-700 font-semibold -mb-px"><i class="fa-solid fa-heart-pulse mr-1"></i>Santé Financière</button>
+    <button onclick="showTab('forecast')" id="tab-forecast" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-chart-line mr-1"></i>Prévision Dépenses</button>
+    <button onclick="showTab('whatif')" id="tab-whatif" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-sliders mr-1"></i>Simulateur What-If</button>
+    <button onclick="showTab('trend')" id="tab-trend" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Tendance Rentabilité</button>
+    <button onclick="showTab('nlp')" id="tab-nlp" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-tags mr-1"></i>Catégorisation</button>
+    <button onclick="showTab('palerts')" id="tab-palerts" class="whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px"><i class="fa-solid fa-bell mr-1"></i>Alertes Prédictives</button>
+  </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+<!-- ══════ SANTÉ FINANCIÈRE ══════ -->
+<div id="tab-health-content">
+  <div class="flex justify-end mb-4">
+    <button onclick="loadHealth()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Analyser</button>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- Score global -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase mb-4">Score Global</h3>
+      <div class="relative w-40 h-40">
+        <svg class="w-full h-full -rotate-90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="40" fill="none" stroke="#f0fdf4" stroke-width="10"/>
+          <circle id="health-ring" cx="45" cy="45" r="40" fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round" style="stroke-dasharray:251;stroke-dashoffset:251;transition:stroke-dashoffset 1s ease"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="health-score" class="text-4xl font-bold text-gray-800">—</span>
+          <span id="health-level" class="text-xs font-semibold mt-1 px-2 py-0.5 rounded-full">—</span>
+        </div>
+      </div>
+      <div id="health-reco" class="mt-4 space-y-2 w-full"></div>
+    </div>
+    <!-- 5 métriques -->
+    <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase mb-4">Détail des 5 Métriques</h3>
+      <div id="health-metrics" class="space-y-4">
+        <div class="skeleton h-12 rounded-xl"></div>
+        <div class="skeleton h-12 rounded-xl"></div>
+        <div class="skeleton h-12 rounded-xl"></div>
+        <div class="skeleton h-12 rounded-xl"></div>
+        <div class="skeleton h-12 rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PRÉVISION DÉPENSES ══════ -->
+<div id="tab-forecast-content" class="hidden">
+  <div class="flex items-center gap-3 mb-4">
+    <label class="text-sm text-gray-600">Horizon de prévision :</label>
+    <select id="forecast-months" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+      <option value="1">1 mois</option><option value="2">2 mois</option>
+      <option value="3" selected>3 mois</option><option value="6">6 mois</option>
+    </select>
+    <button onclick="loadForecast()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Calculer</button>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 mb-6" id="forecast-monthly"></div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4"><i class="fa-solid fa-table text-green-600 mr-1"></i> Prévision par Catégorie</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="forecast-table">
+        <thead><tr class="border-b border-gray-100 text-left">
+          <th class="py-2 px-3 text-xs text-gray-400 font-medium">Catégorie</th>
+          <th class="py-2 px-3 text-xs text-gray-400 font-medium text-right">Moy. actuelle</th>
+          <th class="py-2 px-3 text-xs text-gray-400 font-medium text-right">Prévision</th>
+          <th class="py-2 px-3 text-xs text-gray-400 font-medium text-right">Variation</th>
+          <th class="py-2 px-3 text-xs text-gray-400 font-medium">Tendance</th>
+        </tr></thead>
+        <tbody id="forecast-tbody">
+          <tr><td colspan="5" class="text-center py-6 text-sm text-gray-400">Cliquez sur "Calculer" pour lancer la prévision</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="forecast-meta" class="mt-3 text-xs text-gray-400"></div>
+  </div>
+</div>
+
+<!-- ══════ WHAT-IF SIMULATOR ══════ -->
+<div id="tab-whatif-content" class="hidden">
+  <div class="grid md:grid-cols-5 gap-6">
+    <!-- Sliders -->
+    <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-1">Paramètres de Simulation</h3>
+      <p class="text-xs text-gray-400 mb-4">Modifiez les curseurs et cliquez "Simuler"</p>
+      <div class="space-y-4" id="whatif-sliders">
+        <div>
+          <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Variation Revenus</span><span id="val-income" class="font-bold text-green-600">0%</span></div>
+          <input type="range" id="sl-income" min="-50" max="100" value="0" oninput="updateSlider('income')" class="w-full">
+        </div>
+        <hr class="border-gray-100">
+        <p class="text-xs font-medium text-gray-500 uppercase">Dépenses par catégorie</p>
+        <div id="cat-sliders" class="space-y-3"></div>
+      </div>
+      <div class="mt-4 space-y-2">
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">Durée simulation (mois)</label>
+          <select id="sim-months" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+            <option value="1">1 mois</option><option value="3" selected>3 mois</option>
+            <option value="6">6 mois</option><option value="12">12 mois</option>
+          </select>
+        </div>
+        <button onclick="runWhatIf()" class="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm hover:bg-green-700 font-medium transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play"></i> Simuler
+        </button>
+        <button onclick="resetWhatIf()" class="w-full bg-gray-100 text-gray-600 py-2 rounded-xl text-sm hover:bg-gray-200">
+          <i class="fa-solid fa-rotate-left mr-1"></i> Réinitialiser
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="md:col-span-3 space-y-4">
+      <!-- Verdict -->
+      <div id="whatif-verdict" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <div id="verdict-icon" class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"></div>
+          <div>
+            <div id="verdict-label" class="text-lg font-bold"></div>
+            <div id="verdict-impact" class="text-sm text-gray-500"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3" id="verdict-kpi"></div>
+      </div>
+
+      <!-- Projections -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-3">Projections Mensuelles</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-100">
+              <th class="py-2 px-2 text-left text-xs text-gray-400">Mois</th>
+              <th class="py-2 px-2 text-right text-xs text-gray-400">Revenus</th>
+              <th class="py-2 px-2 text-right text-xs text-gray-400">Dépenses</th>
+              <th class="py-2 px-2 text-right text-xs text-gray-400">Net</th>
+              <th class="py-2 px-2 text-right text-xs text-gray-400">Cumulatif</th>
+            </tr></thead>
+            <tbody id="whatif-proj"><tr><td colspan="5" class="text-center py-6 text-sm text-gray-400">Lancez la simulation →</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Category impacts -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-3">Impact par Catégorie</h3>
+        <div id="cat-impacts" class="space-y-2"></div>
+      </div>
+
+      <!-- Warnings -->
+      <div id="feasibility-box" class="hidden bg-orange-50 border border-orange-200 rounded-2xl p-4">
+        <h4 class="text-sm font-semibold text-orange-800 mb-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Avertissements de Faisabilité</h4>
+        <ul id="feasibility-list" class="text-xs text-orange-700 space-y-1"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TENDANCE RENTABILITÉ ══════ -->
+<div id="tab-trend-content" class="hidden">
+  <div class="flex items-center gap-3 mb-4">
+    <label class="text-sm text-gray-600">Période d'analyse :</label>
+    <select id="trend-months" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+      <option value="3">3 mois</option><option value="6" selected>6 mois</option>
+      <option value="9">9 mois</option><option value="12">12 mois</option>
+    </select>
+    <button onclick="loadTrend()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Analyser</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="trend-kpi"></div>
+
+  <!-- Regression -->
+  <div class="grid md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4"><i class="fa-solid fa-chart-line text-green-600 mr-1"></i> Régression Linéaire</h3>
+      <div id="regression-box" class="space-y-3 text-sm text-gray-700"></div>
+    </div>
+    <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-700 mb-4">Meilleurs & Pires Mois</h3>
+      <div id="best-worst" class="grid grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+
+  <!-- Monthly table -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-semibold text-gray-700 mb-4">Détail Mensuel</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100">
+          <th class="py-2 px-3 text-left text-xs text-gray-400 font-medium">Mois</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400 font-medium">Revenus</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400 font-medium">Dépenses</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400 font-medium">Profit Net</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-400 font-medium">Marge</th>
+        </tr></thead>
+        <tbody id="trend-tbody"><tr><td colspan="5" class="text-center py-6 text-gray-400 text-sm">Cliquez sur "Analyser"</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ CATÉGORISATION NLP ══════ -->
+<div id="tab-nlp-content" class="hidden">
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="font-semibold text-gray-700 mb-2">Catégorisation Intelligente</h3>
+      <p class="text-sm text-gray-400 mb-4">Saisissez la description d'une transaction et l'IA suggère automatiquement la catégorie.</p>
+      <div class="flex gap-3 mb-4">
+        <input type="text" id="nlp-input" placeholder="Ex: Achat de semences de blé pour la plantation de printemps..."
+          class="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none"
+          onkeydown="if(event.key==='Enter') categorize()">
+        <button onclick="categorize()" class="px-5 py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 font-medium">
+          <i class="fa-solid fa-magnifying-glass mr-1"></i> Analyser
+        </button>
+      </div>
+
+      <!-- Quick examples -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <span class="text-xs text-gray-400">Exemples :</span>
+        <button onclick="setNlp('Réparation du tracteur John Deere')" class="text-xs px-2 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">Réparation tracteur</button>
+        <button onclick="setNlp('Salaire des ouvriers agricoles')" class="text-xs px-2 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">Salaire ouvriers</button>
+        <button onclick="setNlp('Achat engrais NPK pour blé')" class="text-xs px-2 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">Engrais NPK</button>
+        <button onclick="setNlp('Livraison tomates au marché')" class="text-xs px-2 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">Livraison marché</button>
+        <button onclick="setNlp('Vente récolte d\'olives 500kg')" class="text-xs px-2 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">Vente olives</button>
+      </div>
+
+      <!-- Result -->
+      <div id="nlp-result" class="hidden">
+        <div class="p-4 bg-green-50 rounded-xl border border-green-200 mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-green-800 text-lg" id="nlp-category"></span>
+            <span class="text-sm font-bold text-green-700" id="nlp-confidence"></span>
+          </div>
+          <div class="text-xs text-green-600 italic" id="nlp-description"></div>
+        </div>
+        <h4 class="text-sm font-medium text-gray-500 mb-2">Scores par catégorie</h4>
+        <div id="nlp-scores" class="space-y-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ ALERTES PRÉDICTIVES ══════ -->
+<div id="tab-palerts-content" class="hidden">
+  <div class="flex justify-end mb-4">
+    <button onclick="loadPAlerts()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+  </div>
+  <div id="palerts-summary" class="mb-4 hidden p-3 rounded-xl border text-sm"></div>
+  <div id="palerts-list" class="space-y-4">
+    <div class="skeleton h-28 rounded-2xl"></div>
+    <div class="skeleton h-28 rounded-2xl"></div>
+  </div>
+</div>
+
+</div><!-- /max-w -->
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
+  <div class="bg-gray-800 text-white text-sm rounded-xl px-4 py-3 shadow-lg flex items-center gap-2">
+    <i id="toast-icon" class="fa-solid fa-circle-info"></i><span id="toast-msg"></span>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://localhost:8085';
+const CATEGORIES = ['SEEDS','FERTILIZER','IRRIGATION','LABOR','TRANSPORT','EQUIPMENT','INSURANCE','LOAN_PAYMENT','OTHER'];
+
+// ── Token ──────────────────────────────────────────────
+function token(){return localStorage.getItem('agri_token')||'';}
+function saveToken(){const v=document.getElementById('token-input').value.trim();if(!v)return;localStorage.setItem('agri_token',v);updateTokenStatus();toggleToken();toast('Token enregistré','success');}
+function clearToken(){localStorage.removeItem('agri_token');updateTokenStatus();toast('Token supprimé','info');}
+function toggleToken(){const p=document.getElementById('token-panel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))document.getElementById('token-input').value=token();}
+function updateTokenStatus(){document.getElementById('token-status').className='w-2 h-2 rounded-full '+(token()?'bg-green-400':'bg-red-400');}
+
+function toast(msg,type='info'){
+  const icons={success:'fa-circle-check text-green-400',error:'fa-circle-xmark text-red-400',info:'fa-circle-info text-blue-400',warn:'fa-triangle-exclamation text-yellow-400'};
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-icon').className='fa-solid '+(icons[type]||icons.info);
+  const t=document.getElementById('toast');t.classList.remove('hidden');
+  setTimeout(()=>t.classList.add('hidden'),3500);
+}
+
+async function api(path,opts={}){
+  const res=await fetch(BASE+path,{headers:{'Authorization':'Bearer '+token(),'Content-Type':'application/json',...(opts.headers||{})},...opts});
+  if(!res.ok){const txt=await res.text();throw new Error(txt||res.status);}
+  return res.json();
+}
+
+const fmt=n=>Number(n||0).toLocaleString('fr-TN',{minimumFractionDigits:0,maximumFractionDigits:0})+' TND';
+const levelColor={EXCELLENT:'text-green-700 bg-green-100',GOOD:'text-blue-700 bg-blue-100',FAIR:'text-yellow-700 bg-yellow-100',POOR:'text-orange-700 bg-orange-100',CRITICAL:'text-red-700 bg-red-100'};
+const trendColor={INCREASING:'text-red-600',DECREASING:'text-green-600',STABLE:'text-gray-500'};
+const trendIcon={INCREASING:'<i class="fa-solid fa-arrow-up text-red-500"></i>',DECREASING:'<i class="fa-solid fa-arrow-down text-green-500"></i>',STABLE:'<i class="fa-solid fa-minus text-gray-400"></i>'};
+
+function showTab(name){
+  const tabs=['health','forecast','whatif','trend','nlp','palerts'];
+  tabs.forEach(t=>{
+    document.getElementById('tab-'+t+'-content').classList.toggle('hidden',t!==name);
+    document.getElementById('tab-'+t).className=t===name
+      ?'whitespace-nowrap py-3 px-3 text-sm border-b-2 border-green-600 text-green-700 font-semibold -mb-px'
+      :'whitespace-nowrap py-3 px-3 text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 -mb-px';
+  });
+}
+
+// ══════ HEALTH ══════════════════════════════════════════
+async function loadHealth(){
+  try{
+    const d=await api('/api/ai/accounting/health-score');
+    const score=d.overallScore||0;
+    document.getElementById('health-ring').style.strokeDashoffset=251-(score/100)*251;
+    document.getElementById('health-score').textContent=score;
+    const lc=levelColor[d.healthLevel]||'text-gray-600 bg-gray-100';
+    document.getElementById('health-level').textContent=d.healthLevel;
+    document.getElementById('health-level').className='text-xs font-semibold mt-1 px-2 py-0.5 rounded-full '+lc;
+
+    const metrics=[
+      {label:'Ratio Dép./Rev.',score:d.expenseRatio?.score,weight:d.expenseRatio?.weight,desc:d.expenseRatio?.description},
+      {label:'Régularité Revenus',score:d.incomeRegularity?.score,weight:d.incomeRegularity?.weight,desc:d.incomeRegularity?.description},
+      {label:'Diversification',score:d.diversification?.score,weight:d.diversification?.weight,desc:d.diversification?.description},
+      {label:'Taux d\'Épargne',score:d.savingsRate?.score,weight:d.savingsRate?.weight,desc:d.savingsRate?.description},
+      {label:'Tendance',score:d.trendScore?.score,weight:d.trendScore?.weight,desc:d.trendScore?.description},
+    ].filter(m=>m.score!=null);
+
+    document.getElementById('health-metrics').innerHTML=metrics.map(m=>`
+      <div class="fade-in">
+        <div class="flex justify-between items-center mb-1">
+          <div>
+            <span class="text-sm font-medium text-gray-700">${m.label}</span>
+            <span class="text-xs text-gray-400 ml-2">(poids ${((m.weight||0)*100).toFixed(0)}%)</span>
+          </div>
+          <span class="text-sm font-bold ${m.score>=70?'text-green-600':m.score>=50?'text-yellow-600':'text-red-600'}">${m.score}/100</span>
+        </div>
+        <div class="h-2.5 bg-gray-100 rounded-full">
+          <div class="h-full rounded-full transition-all duration-700 ${m.score>=70?'bg-green-500':m.score>=50?'bg-yellow-400':'bg-red-400'}" style="width:${m.score}%"></div>
+        </div>
+        ${m.desc?`<div class="text-xs text-gray-400 mt-0.5">${m.desc}</div>`:''}
+      </div>`).join('');
+
+    const recos=d.recommendations||[];
+    document.getElementById('health-reco').innerHTML=recos.length?recos.map(r=>`
+      <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-800 fade-in">
+        <i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i>${r}
+      </div>`).join(''):
+      '<div class="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700"><i class="fa-solid fa-circle-check mr-1"></i>Aucune action requise — situation saine !</div>';
+
+    toast('Analyse santé terminée','success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ FORECAST ══════════════════════════════════════
+async function loadForecast(){
+  const months=document.getElementById('forecast-months').value;
+  try{
+    const d=await api('/api/ai/accounting/forecast/expenses?months='+months);
+    const monthly=d.monthlyForecasts||[];
+    const confColor={HIGH_CONFIDENCE:'bg-green-100 text-green-700',MEDIUM_CONFIDENCE:'bg-yellow-100 text-yellow-700',LOW_CONFIDENCE:'bg-red-100 text-red-700'};
+    document.getElementById('forecast-monthly').innerHTML=monthly.map(m=>`
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center fade-in">
+        <div class="text-xs text-gray-400 mb-1">${m.month}</div>
+        <div class="text-lg font-bold text-gray-800">${fmt(m.projectedExpenses)}</div>
+        <span class="text-xs px-2 py-0.5 rounded-full ${confColor[m.trend]||'bg-gray-100 text-gray-600'}">${(m.confidence||0).toFixed(0)}% confiance</span>
+      </div>`).join('');
+
+    const cats=d.categoryForecasts||[];
+    document.getElementById('forecast-tbody').innerHTML=cats.map(c=>`
+      <tr class="hover:bg-gray-50 border-b border-gray-50">
+        <td class="py-2 px-3 font-medium text-gray-700">${c.category}</td>
+        <td class="py-2 px-3 text-right text-gray-500">${fmt(c.currentMonthlyAvg)}</td>
+        <td class="py-2 px-3 text-right font-semibold text-gray-800">${fmt(c.forecastedAmount)}</td>
+        <td class="py-2 px-3 text-right ${(c.growthRate||0)>0?'text-red-500':'text-green-600'}">${(c.growthRate||0)>0?'+':''}${(c.growthRate||0).toFixed(1)}%</td>
+        <td class="py-2 px-3">${trendIcon[c.trend]||''} <span class="text-xs ${trendColor[c.trend]||''}">${c.trend||''}</span></td>
+      </tr>`).join('');
+
+    document.getElementById('forecast-meta').innerHTML=`Méthodologie : ${d.methodology||''} · Total prévu ${d.forecastMonths} mois : <strong>${fmt(d.totalForecastedExpenses)}</strong>`;
+    toast('Prévision calculée','success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ WHAT-IF ══════════════════════════════════════
+function buildSliders(){
+  document.getElementById('cat-sliders').innerHTML=CATEGORIES.map(c=>`
+    <div>
+      <div class="flex justify-between text-xs text-gray-500 mb-0.5"><span>${c}</span><span id="val-${c}" class="font-bold text-blue-600">0%</span></div>
+      <input type="range" id="sl-${c}" min="-50" max="100" value="0" oninput="updateSlider('${c}')" class="w-full">
+    </div>`).join('');
+}
+
+function updateSlider(cat){
+  const el=document.getElementById('sl-'+cat);
+  const v=parseInt(el.value);
+  const lbl=document.getElementById('val-'+cat);
+  lbl.textContent=(v>0?'+':'')+v+'%';
+  lbl.className='font-bold '+(v>0?'text-red-500':v<0?'text-green-600':'text-blue-600');
+}
+
+function resetWhatIf(){
+  document.getElementById('sl-income').value=0;updateSlider('income');
+  CATEGORIES.forEach(c=>{document.getElementById('sl-'+c).value=0;updateSlider(c);});
+  document.getElementById('whatif-verdict').classList.add('hidden');
+  document.getElementById('whatif-proj').innerHTML='<tr><td colspan="5" class="text-center py-6 text-sm text-gray-400">Lancez la simulation →</td></tr>';
+  document.getElementById('cat-impacts').innerHTML='';
+  document.getElementById('feasibility-box').classList.add('hidden');
+}
+
+async function runWhatIf(){
+  const incomeChange=parseInt(document.getElementById('sl-income').value);
+  const catChanges={};
+  CATEGORIES.forEach(c=>{const v=parseInt(document.getElementById('sl-'+c).value);if(v!==0)catChanges[c]=v;});
+  const body={incomeChangePercent:incomeChange,categoryChanges:catChanges,simulationMonths:parseInt(document.getElementById('sim-months').value)};
+  try{
+    const d=await api('/api/ai/accounting/simulate/what-if',{method:'POST',body:JSON.stringify(body)});
+
+    // Verdict
+    const vEl=document.getElementById('whatif-verdict');
+    vEl.classList.remove('hidden');
+    const verdictCfg={POSITIVE:{bg:'bg-green-50 border-green-200',icon:'fa-arrow-trend-up text-green-600',iconBg:'bg-green-100',color:'text-green-700'},NEGATIVE:{bg:'bg-red-50 border-red-200',icon:'fa-arrow-trend-down text-red-600',iconBg:'bg-red-100',color:'text-red-700'},NEUTRAL:{bg:'bg-gray-50 border-gray-200',icon:'fa-minus text-gray-600',iconBg:'bg-gray-100',color:'text-gray-700'}};
+    const vc=verdictCfg[d.verdict]||verdictCfg.NEUTRAL;
+    vEl.className='bg-white rounded-2xl shadow-sm border p-5 '+vc.bg+' fade-in';
+    document.getElementById('verdict-icon').className='w-12 h-12 rounded-2xl flex items-center justify-center text-xl '+vc.iconBg;
+    document.getElementById('verdict-icon').innerHTML='<i class="fa-solid '+vc.icon+'"></i>';
+    document.getElementById('verdict-label').textContent=d.verdict+' — Impact net: '+(d.netImpact>=0?'+':'')+Number(d.netImpact||0).toFixed(0)+' TND/mois';
+    document.getElementById('verdict-label').className='text-lg font-bold '+vc.color;
+    document.getElementById('verdict-impact').textContent=(d.dataSource||'');
+    document.getElementById('verdict-kpi').innerHTML=`
+      <div class="p-3 bg-white rounded-xl border border-gray-100 text-center">
+        <div class="text-xs text-gray-400 mb-1">Revenu simulé</div>
+        <div class="font-bold text-green-600">${fmt(d.simulatedMonthlyIncome)}</div>
+        <div class="text-xs text-gray-400">vs ${fmt(d.currentMonthlyIncome)}</div>
+      </div>
+      <div class="p-3 bg-white rounded-xl border border-gray-100 text-center">
+        <div class="text-xs text-gray-400 mb-1">Dépenses simulées</div>
+        <div class="font-bold text-red-500">${fmt(d.simulatedMonthlyExpenses)}</div>
+        <div class="text-xs text-gray-400">vs ${fmt(d.currentMonthlyExpenses)}</div>
+      </div>
+      <div class="p-3 bg-white rounded-xl border border-gray-100 text-center">
+        <div class="text-xs text-gray-400 mb-1">Net simulé</div>
+        <div class="font-bold ${d.simulatedNetIncome>=0?'text-blue-600':'text-red-600'}">${fmt(d.simulatedNetIncome)}</div>
+        <div class="text-xs text-gray-400">vs ${fmt(d.currentNetIncome)}</div>
+      </div>`;
+
+    // Projections
+    const projs=d.monthlyProjections||[];
+    document.getElementById('whatif-proj').innerHTML=projs.map(p=>`
+      <tr class="hover:bg-gray-50 border-b border-gray-50">
+        <td class="py-2 px-2 text-xs font-medium text-gray-700">${p.month}</td>
+        <td class="py-2 px-2 text-right text-xs text-green-600">${fmt(p.projectedIncome)}</td>
+        <td class="py-2 px-2 text-right text-xs text-red-500">${fmt(p.projectedExpenses)}</td>
+        <td class="py-2 px-2 text-right text-xs font-bold ${p.projectedNet>=0?'text-blue-600':'text-red-600'}">${fmt(p.projectedNet)}</td>
+        <td class="py-2 px-2 text-right text-xs text-gray-600">${fmt(p.cumulativeSavings)}</td>
+      </tr>`).join('');
+
+    // Category impacts
+    const impacts=d.categoryImpacts||{};
+    const feasColors={REALISTIC:'bg-green-50 text-green-700',AGGRESSIVE:'bg-orange-50 text-orange-700',UNREALISTIC:'bg-red-50 text-red-700',NO_DATA:'bg-gray-50 text-gray-500'};
+    document.getElementById('cat-impacts').innerHTML=Object.entries(impacts).map(([cat,ci])=>`
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 fade-in">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm font-medium text-gray-700">${cat}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full ${feasColors[ci.feasibility]||'bg-gray-100 text-gray-500'}">${ci.feasibility}</span>
+        </div>
+        <div class="text-xs text-gray-500">${ci.formula||''}</div>
+      </div>`).join('');
+
+    // Warnings
+    const warns=d.feasibilityWarnings||[];
+    if(warns.length){
+      document.getElementById('feasibility-box').classList.remove('hidden');
+      document.getElementById('feasibility-list').innerHTML=warns.map(w=>`<li>• ${w}</li>`).join('');
+    }else{document.getElementById('feasibility-box').classList.add('hidden');}
+
+    toast('Simulation terminée','success');
+  }catch(e){toast('Erreur simulation : '+e.message,'error');}
+}
+
+// ══════ TREND ══════════════════════════════════════════
+async function loadTrend(){
+  const months=document.getElementById('trend-months').value;
+  try{
+    const d=await api('/api/ai/accounting/trends/profitability?months='+months);
+    const trendIconMap={GROWING:'<i class="fa-solid fa-arrow-trend-up text-green-500"></i>',DECLINING:'<i class="fa-solid fa-arrow-trend-down text-red-500"></i>',STABLE:'<i class="fa-solid fa-minus text-gray-400"></i>'};
+    document.getElementById('trend-kpi').innerHTML=`
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center fade-in">
+        <div class="text-xs text-gray-400 mb-1">Tendance</div>
+        <div class="text-lg font-bold text-gray-800 flex items-center justify-center gap-2">${trendIconMap[d.overallTrend]||''} ${d.overallTrend||'—'}</div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center fade-in">
+        <div class="text-xs text-gray-400 mb-1">Profit moyen/mois</div>
+        <div class="text-lg font-bold ${(d.averageMonthlyProfit||0)>=0?'text-green-600':'text-red-600'}">${fmt(d.averageMonthlyProfit)}</div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center fade-in">
+        <div class="text-xs text-gray-400 mb-1">Croissance globale</div>
+        <div class="text-lg font-bold ${(d.overallGrowthRate||0)>=0?'text-green-600':'text-red-600'}">${(d.overallGrowthRate||0)>0?'+':''}${Number(d.overallGrowthRate||0).toFixed(1)}%</div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center fade-in">
+        <div class="text-xs text-gray-400 mb-1">R² (fiabilité)</div>
+        <div class="text-lg font-bold text-blue-600">${(d.regression?.rSquared||0).toFixed(3)}</div>
+      </div>`;
+
+    const reg=d.regression||{};
+    document.getElementById('regression-box').innerHTML=`
+      <div class="flex justify-between py-2 border-b border-gray-50"><span class="text-gray-500">Pente (slope)</span><span class="font-bold">${(reg.slope||0).toFixed(2)} TND/mois</span></div>
+      <div class="flex justify-between py-2 border-b border-gray-50"><span class="text-gray-500">Intercept</span><span class="font-bold">${(reg.intercept||0).toFixed(2)}</span></div>
+      <div class="flex justify-between py-2 border-b border-gray-50"><span class="text-gray-500">R²</span><span class="font-bold">${(reg.rSquared||0).toFixed(4)}</span></div>
+      <div class="mt-3 p-3 bg-blue-50 rounded-xl text-xs text-blue-800"><i class="fa-solid fa-comment-dots mr-1"></i>${reg.interpretation||''}</div>`;
+
+    document.getElementById('best-worst').innerHTML=`
+      <div class="p-4 bg-green-50 rounded-xl border border-green-200">
+        <div class="text-xs text-green-500 mb-1">Meilleur mois</div>
+        <div class="font-bold text-green-700">${d.bestMonth||'—'}</div>
+        <div class="text-lg font-bold text-green-600 mt-1">${fmt(d.bestMonthProfit)}</div>
+      </div>
+      <div class="p-4 bg-red-50 rounded-xl border border-red-200">
+        <div class="text-xs text-red-500 mb-1">Pire mois</div>
+        <div class="font-bold text-red-700">${d.worstMonth||'—'}</div>
+        <div class="text-lg font-bold text-red-600 mt-1">${fmt(d.worstMonthProfit)}</div>
+      </div>`;
+
+    const profits=d.monthlyProfits||[];
+    document.getElementById('trend-tbody').innerHTML=profits.map(p=>`
+      <tr class="hover:bg-gray-50 border-b border-gray-50">
+        <td class="py-2 px-3 text-sm font-medium text-gray-700">${p.month}</td>
+        <td class="py-2 px-3 text-right text-sm text-green-600">${fmt(p.income)}</td>
+        <td class="py-2 px-3 text-right text-sm text-red-500">${fmt(p.expenses)}</td>
+        <td class="py-2 px-3 text-right text-sm font-bold ${p.netProfit>=0?'text-blue-600':'text-red-600'}">${fmt(p.netProfit)}</td>
+        <td class="py-2 px-3 text-right text-sm text-gray-500">${Number(p.profitMargin||0).toFixed(1)}%</td>
+      </tr>`).join('');
+
+    toast('Tendance analysée','success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ NLP ══════════════════════════════════════════
+function setNlp(text){document.getElementById('nlp-input').value=text;categorize();}
+
+async function categorize(){
+  const desc=document.getElementById('nlp-input').value.trim();
+  if(!desc){toast('Saisissez une description','warn');return;}
+  try{
+    const d=await api('/api/ai/accounting/categorize',{method:'POST',body:JSON.stringify({description:desc})});
+    document.getElementById('nlp-result').classList.remove('hidden');
+    document.getElementById('nlp-category').textContent=d.suggestedCategory;
+    document.getElementById('nlp-confidence').textContent='Confiance : '+(d.confidenceScore||0).toFixed(1)+'%';
+    document.getElementById('nlp-description').textContent='"'+desc+'"';
+    const scores=(d.allScores||[]).slice(0,5);
+    document.getElementById('nlp-scores').innerHTML=scores.map(s=>`
+      <div class="fade-in">
+        <div class="flex justify-between text-xs mb-0.5">
+          <span class="font-medium text-gray-600">${s.category}</span>
+          <span class="text-gray-500">${(s.score||0).toFixed(1)}% ${s.matchedKeywords?.length?'— '+s.matchedKeywords.join(', '):''}</span>
+        </div>
+        <div class="h-1.5 bg-gray-100 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:${Math.min(100,s.score||0)}%"></div></div>
+      </div>`).join('');
+    toast('Catégorie suggérée : '+d.suggestedCategory,'success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// ══════ ALERTES PRÉDICTIVES ══════════════════════════
+async function loadPAlerts(){
+  document.getElementById('palerts-list').innerHTML='<div class="skeleton h-28 rounded-2xl"></div>'.repeat(2);
+  try{
+    const d=await api('/api/ai/accounting/budget/predictive-alerts');
+    const alerts=d.alerts||[];
+    const sumEl=document.getElementById('palerts-summary');
+    sumEl.classList.remove('hidden');
+    if(alerts.length===0){
+      sumEl.className='mb-4 p-3 rounded-xl border text-sm bg-green-50 border-green-200 text-green-700';
+      sumEl.innerHTML='<i class="fa-solid fa-circle-check mr-1"></i> Aucune alerte — tous vos budgets sont sous contrôle !';
+      document.getElementById('palerts-list').innerHTML='';
+      return;
+    }
+    const crit=alerts.filter(a=>a.severity==='CRITICAL').length;
+    sumEl.className='mb-4 p-3 rounded-xl border text-sm '+(crit>0?'bg-red-50 border-red-200 text-red-700':'bg-orange-50 border-orange-200 text-orange-700');
+    sumEl.innerHTML=`${alerts.length} alerte(s) détectée(s) dont ${crit} CRITIQUE(S)`;
+    const sevStyle={CRITICAL:'border-red-300 bg-red-50',HIGH:'border-orange-300 bg-orange-50',MEDIUM:'border-yellow-300 bg-yellow-50',LOW:'border-gray-200 bg-gray-50'};
+    const sevIcon={CRITICAL:'fa-circle-xmark text-red-500',HIGH:'fa-triangle-exclamation text-orange-500',MEDIUM:'fa-bell text-yellow-500',LOW:'fa-bell text-gray-400'};
+    document.getElementById('palerts-list').innerHTML=alerts.map(a=>`
+      <div class="bg-white rounded-2xl shadow-sm border p-5 fade-in ${sevStyle[a.severity]||'border-gray-200 bg-white'}">
+        <div class="flex items-start gap-3">
+          <i class="fa-solid ${sevIcon[a.severity]||'fa-bell'} text-xl mt-0.5"></i>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold text-gray-800">${a.category}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${a.severity==='CRITICAL'?'bg-red-100 text-red-700':a.severity==='HIGH'?'bg-orange-100 text-orange-700':'bg-yellow-100 text-yellow-700'}">${a.severity}</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+                <div class="text-xs text-gray-400">Budget</div>
+                <div class="text-sm font-bold text-gray-700">${fmt(a.budgetedAmount)}</div>
+              </div>
+              <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+                <div class="text-xs text-gray-400">Dépensé</div>
+                <div class="text-sm font-bold text-orange-600">${fmt(a.spentSoFar)}</div>
+              </div>
+              <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+                <div class="text-xs text-gray-400">Rythme</div>
+                <div class="text-sm font-bold text-red-600">${Number(a.dailyBurnRate||0).toFixed(1)} TND/j</div>
+              </div>
+              <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+                <div class="text-xs text-gray-400">Projection fin mois</div>
+                <div class="text-sm font-bold text-red-700">${fmt(a.projectedMonthEnd)}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3 text-xs text-gray-500">
+              <span>Dépassement prévu : <strong class="text-red-600">+${fmt(a.projectedOverspend)}</strong></span>
+              <span>Épuisement estimé : <strong>${a.estimatedExhaustionDate||'—'}</strong></span>
+              <span>Jours restants : <strong>${a.daysRemaining||0}</strong></span>
+            </div>
+            <div class="p-3 bg-white border border-gray-100 rounded-xl text-xs text-gray-700 leading-relaxed">
+              <i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i>${a.recommendation}
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+    toast(alerts.length+' alerte(s) chargée(s)','warn');
+  }catch(e){toast('Erreur : '+e.message,'error');document.getElementById('palerts-list').innerHTML=`<p class="text-sm text-red-400 text-center py-8">Erreur : ${e.message}</p>`;}
+}
+
+// Init
+updateTokenStatus();
+buildSliders();
+loadHealth();
+</script>
+</body>
+</html>

@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -213,15 +214,22 @@ public class SavingsAIServiceImpl implements ISavingsAIService {
 
         if (goal.getAchieved()) {
             status = "ACHIEVED";
-            statusDetail = "Objectif atteint ! Vous pouvez le collecter.";
+            statusDetail = String.format(
+                    "Objectif atteint ! %.0f TND sur %.0f TND — vous pouvez le collecter dès maintenant.",
+                    goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue());
             probability = 100;
         } else if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             status = "ACHIEVED";
-            statusDetail = "Montant cible atteint — prêt à collecter.";
+            statusDetail = String.format(
+                    "Montant cible atteint : %.0f TND. Vous pouvez collecter cet objectif.",
+                    goal.getTargetAmount().doubleValue());
             probability = 100;
         } else if (monthlyContrib.compareTo(BigDecimal.ZERO) <= 0) {
             status = "BLOCKED";
-            statusDetail = "Aucune épargne mensuelle allouée à cet objectif. Commencez à faire des dépôts réguliers.";
+            statusDetail = String.format(
+                    "Aucune épargne allouée à cet objectif (%.0f TND restants sur %.0f TND). " +
+                    "Faites un dépôt ou définissez une priorité/pourcentage pour débloquer la progression.",
+                    remaining.doubleValue(), goal.getTargetAmount().doubleValue());
             probability = 0;
         } else {
             int rawMonths = remaining.divide(monthlyContrib, 0, RoundingMode.CEILING).intValue();
@@ -232,17 +240,27 @@ public class SavingsAIServiceImpl implements ISavingsAIService {
             probability = Math.min(95, 50.0 + (monthlyContrib.doubleValue() / remaining.doubleValue()) * 200);
 
             String waitNote = monthsOffset > 0
-                    ? " (dont " + monthsOffset + " mois d'attente avant démarrage)"
+                    ? String.format(" (dont %d mois d'attente pendant que les objectifs prioritaires sont financés)", monthsOffset)
                     : "";
 
             if (beforeTargetDate) {
                 status = "ON_TRACK";
-                statusDetail = "Objectif atteignable en " + estimatedMonths + " mois au total" + waitNote
-                        + (goal.getTargetDate() != null ? " — avant le " + goal.getTargetDate() : "") + ".";
+                statusDetail = String.format(
+                        "En bonne voie : %.0f TND restants à %.0f TND/mois alloués = %d mois%s. " +
+                        "Completion prévue le %s%s.",
+                        remaining.doubleValue(), monthlyContrib.doubleValue(), estimatedMonths, waitNote,
+                        estimatedDate,
+                        goal.getTargetDate() != null ? " — avant la date cible du " + goal.getTargetDate() : "");
             } else {
                 status = "AT_RISK";
-                statusDetail = "À ce rythme, l'objectif sera atteint le " + estimatedDate
-                        + " (après la date cible du " + goal.getTargetDate() + ")" + waitNote + ".";
+                long delayMonths = goal.getTargetDate() != null
+                        ? java.time.temporal.ChronoUnit.MONTHS.between(goal.getTargetDate(), estimatedDate) : 0;
+                statusDetail = String.format(
+                        "Retard probable : %.0f TND restants à %.0f TND/mois = %d mois%s. " +
+                        "Completion prévue le %s — soit %d mois après la date cible du %s. " +
+                        "Augmentez vos dépôts ou ajustez la date cible.",
+                        remaining.doubleValue(), monthlyContrib.doubleValue(), estimatedMonths, waitNote,
+                        estimatedDate, delayMonths, goal.getTargetDate());
                 probability = Math.min(probability, 60);
             }
         }
@@ -355,10 +373,23 @@ public class SavingsAIServiceImpl implements ISavingsAIService {
                     : 0;
 
             String monthName = planMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH);
-            String note = factor > 1.3
-                    ? "Mois historiquement favorable (" + monthName + " l'an dernier : revenus nets élevés) — épargnez davantage"
-                    : factor > 0.9 ? "Mois normal — maintenez votre rythme habituel"
-                    : "Mois historiquement difficile (" + monthName + " l'an dernier : dépenses élevées) — montant réduit";
+            String note;
+            if (factor > 1.3) {
+                note = String.format(
+                        "Mois favorable : en %s l'an dernier vos revenus nets étaient %.0f%% au-dessus de la moyenne. " +
+                        "Profitez-en pour épargner %.0f TND ce mois-ci (vs %.0f TND en rythme normal).",
+                        monthName, (factor - 1.0) * 100, adjusted.doubleValue(), recommendedMonthly.doubleValue());
+            } else if (factor > 0.9) {
+                note = String.format(
+                        "Mois standard : activité proche de la moyenne annuelle. " +
+                        "Maintenez votre dépôt habituel de %.0f TND sans effort particulier.",
+                        adjusted.doubleValue());
+            } else {
+                note = String.format(
+                        "Mois difficile : en %s l'an dernier vos dépenses nettes étaient %.0f%% au-dessus de la moyenne. " +
+                        "Montant réduit à %.0f TND (vs %.0f TND normalement) pour ne pas forcer votre budget.",
+                        monthName, (1.0 - factor) * 100, adjusted.doubleValue(), recommendedMonthly.doubleValue());
+            }
 
             monthlyPlan.add(SmartSavingsPlanResponse.MonthlyPlan.builder()
                     .month(monthName + " " + planMonth.getYear())
@@ -461,16 +492,62 @@ public class SavingsAIServiceImpl implements ISavingsAIService {
         String riskLevel = riskScore >= 8 ? "CRITICAL" : riskScore >= 6 ? "HIGH" : riskScore >= 4 ? "MEDIUM" : "LOW";
 
         List<String> warnings = new ArrayList<>();
-        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) warnings.add("Solde insuffisant pour ce retrait !");
-        if (goalImpactScore >= 7) warnings.add("Ce retrait retardera significativement vos objectifs d'épargne.");
-        if (expenseCoverageScore >= 7) warnings.add("Après ce retrait, le solde ne couvre pas 1 mois de vos dépenses réelles (" + monthlyExpenses + " DT/mois en moyenne).");
-        if (bufferScore >= 7) warnings.add("Vous retirez plus de 60% de votre épargne totale.");
-        if (historyScore >= 8) warnings.add("Vos retraits récents sont bien plus nombreux que vos dépôts — tendance inquiétante.");
+        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0)
+            warnings.add(String.format("Solde insuffisant : vous avez %.0f TND mais souhaitez retirer %.0f TND — opération impossible.",
+                    currentBalance.doubleValue(), amount.doubleValue()));
+        if (goalImpactScore >= 7) {
+            double progressBefore = account.getGoalAmount() != null && account.getGoalAmount().compareTo(BigDecimal.ZERO) > 0
+                    ? currentBalance.doubleValue() / account.getGoalAmount().doubleValue() * 100 : 0;
+            double progressAfter = account.getGoalAmount() != null && account.getGoalAmount().compareTo(BigDecimal.ZERO) > 0
+                    ? Math.max(0, balanceAfter.doubleValue()) / account.getGoalAmount().doubleValue() * 100 : 0;
+            warnings.add(String.format("Impact objectifs : progression réduite de %.0f%% à %.0f%% — recul de %.0f points sur votre cible de %.0f TND.",
+                    progressBefore, progressAfter, progressBefore - progressAfter,
+                    account.getGoalAmount() != null ? account.getGoalAmount().doubleValue() : 0));
+        }
+        if (expenseCoverageScore >= 7)
+            warnings.add(String.format("Couverture insuffisante : après ce retrait, %.0f TND restants ne couvrent que %.1f mois de vos dépenses réelles (%.0f TND/mois). Le minimum recommandé est 3 mois.",
+                    balanceAfter.max(BigDecimal.ZERO).doubleValue(),
+                    monthlyExpenses.compareTo(BigDecimal.ZERO) > 0 ? balanceAfter.max(BigDecimal.ZERO).divide(monthlyExpenses, 1, RoundingMode.HALF_UP).doubleValue() : 0,
+                    monthlyExpenses.doubleValue()));
+        if (bufferScore >= 7) {
+            double pct = currentBalance.compareTo(BigDecimal.ZERO) > 0
+                    ? amount.doubleValue() / currentBalance.doubleValue() * 100 : 0;
+            warnings.add(String.format("Retrait massif : %.0f%% de votre épargne totale (%.0f TND sur %.0f TND). Il ne resterait que %.0f TND.",
+                    pct, amount.doubleValue(), currentBalance.doubleValue(), balanceAfter.max(BigDecimal.ZERO).doubleValue()));
+        }
+        if (historyScore >= 8)
+            warnings.add(String.format("Tendance préoccupante : %d retraits vs %d dépôts sur les 3 derniers mois — votre épargne s'érode régulièrement. Réévaluez vos habitudes avant ce retrait supplémentaire.",
+                    recentWithdrawals.intValue(), recentDeposits.intValue()));
 
-        String recommendation = riskScore >= 8 ? "Retrait fortement déconseillé."
-                : riskScore >= 6 ? "Envisagez un montant inférieur pour préserver votre sécurité financière."
-                : riskScore >= 4 ? "Retrait acceptable — surveillez votre épargne ensuite."
-                : "Retrait à faible risque.";
+        double coverageAfter = monthlyExpenses.compareTo(BigDecimal.ZERO) > 0 && balanceAfter.compareTo(BigDecimal.ZERO) > 0
+                ? balanceAfter.divide(monthlyExpenses, 1, RoundingMode.HALF_UP).doubleValue() : 0;
+
+        String recommendation;
+        if (riskScore >= 8) {
+            recommendation = String.format(
+                    "Retrait fortement déconseillé : retirer %.0f TND ne laisserait que %.0f TND sur votre compte — " +
+                    "soit %.1f mois de dépenses (%.0f TND/mois). Vos objectifs d'épargne seraient retardés de façon significative. " +
+                    "Si le besoin est urgent, envisagez un montant maximum de %.0f TND (20%% du solde).",
+                    amount.doubleValue(), balanceAfter.max(BigDecimal.ZERO).doubleValue(), coverageAfter,
+                    monthlyExpenses.doubleValue(), currentBalance.multiply(BigDecimal.valueOf(0.20)).setScale(0, RoundingMode.HALF_UP).doubleValue());
+        } else if (riskScore >= 6) {
+            BigDecimal saferAmount = currentBalance.multiply(BigDecimal.valueOf(0.30)).setScale(0, RoundingMode.HALF_UP);
+            recommendation = String.format(
+                    "Retrait risqué : après %.0f TND retirés, il resterait %.0f TND (%.1f mois de dépenses réelles à %.0f TND/mois). " +
+                    "Envisagez plutôt %.0f TND (30%% du solde) pour conserver une marge de sécurité suffisante.",
+                    amount.doubleValue(), balanceAfter.max(BigDecimal.ZERO).doubleValue(), coverageAfter,
+                    monthlyExpenses.doubleValue(), saferAmount.doubleValue());
+        } else if (riskScore >= 4) {
+            recommendation = String.format(
+                    "Retrait acceptable : %.0f TND restants après l'opération couvriront %.1f mois de vos dépenses réelles (%.0f TND/mois). " +
+                    "Planifiez un dépôt dans les 4-6 semaines suivantes pour reconstituer votre épargne.",
+                    balanceAfter.doubleValue(), coverageAfter, monthlyExpenses.doubleValue());
+        } else {
+            recommendation = String.format(
+                    "Retrait à faible risque : %.0f TND restants représentent %.1f mois de dépenses (%.0f TND/mois). " +
+                    "Vos objectifs d'épargne restent bien engagés. Pensez à maintenir vos dépôts réguliers.",
+                    balanceAfter.doubleValue(), coverageAfter, monthlyExpenses.doubleValue());
+        }
 
         return WithdrawalRiskScoreResponse.builder()
                 .withdrawalAmount(amount)
@@ -562,14 +639,35 @@ public class SavingsAIServiceImpl implements ISavingsAIService {
                 .divide(BigDecimal.valueOf(12), 2, RoundingMode.CEILING);
 
         String recommendation;
-        if ("EXCELLENT".equals(protectionLevel))
-            recommendation = "Excellent ! Votre fonds d'urgence couvre plus de 6 mois de vos dépenses réelles (" + avgMonthlyExpenses + " DT/mois). Vous êtes bien protégé.";
-        else if ("GOOD".equals(protectionLevel))
-            recommendation = "Bon niveau. Continuez à épargner pour atteindre l'objectif optimal de " + optimal + " DT (6 mois de dépenses).";
-        else if ("MODERATE".equals(protectionLevel))
-            recommendation = "Protection modérée. Épargnez " + need3Months + " DT/mois pour atteindre le minimum de 3 mois (" + minimum + " DT) en 6 mois.";
-        else
-            recommendation = "Protection insuffisante ! Priorité absolue : constituez un fonds d'urgence de " + minimum + " DT minimum (3 mois × " + avgMonthlyExpenses + " DT/mois).";
+        if ("EXCELLENT".equals(protectionLevel)) {
+            recommendation = String.format(
+                    "Excellent ! Votre épargne (%.0f TND) couvre %.1f mois de dépenses réelles (%.0f TND/mois) — " +
+                    "bien au-delà du seuil optimal de 6 mois (%.0f TND). " +
+                    "L'excédent de %.0f TND au-dessus de l'optimal peut être investi dans la croissance de votre exploitation.",
+                    currentSavings.doubleValue(), coverageMonths, avgMonthlyExpenses.doubleValue(),
+                    optimal.doubleValue(), surplus.doubleValue());
+        } else if ("GOOD".equals(protectionLevel)) {
+            recommendation = String.format(
+                    "Bon niveau : %.0f TND d'épargne couvre %.1f mois de vos dépenses réelles (%.0f TND/mois). " +
+                    "Il vous manque %.0f TND pour atteindre l'objectif optimal de 6 mois (%.0f TND). " +
+                    "En épargnant %.0f TND/mois, vous l'atteignez en 12 mois.",
+                    currentSavings.doubleValue(), coverageMonths, avgMonthlyExpenses.doubleValue(),
+                    optimal.subtract(currentSavings).max(BigDecimal.ZERO).doubleValue(), optimal.doubleValue(), need6Months.doubleValue());
+        } else if ("MODERATE".equals(protectionLevel)) {
+            recommendation = String.format(
+                    "Protection modérée : %.0f TND d'épargne couvre %.1f mois (minimum recommandé : 3 mois = %.0f TND). " +
+                    "Il vous manque %.0f TND pour atteindre ce minimum. " +
+                    "En épargnant %.0f TND/mois, vous comblerez ce déficit en 6 mois.",
+                    currentSavings.doubleValue(), coverageMonths, minimum.doubleValue(),
+                    deficit.doubleValue(), need3Months.doubleValue());
+        } else {
+            recommendation = String.format(
+                    "Protection insuffisante : %.0f TND d'épargne couvre seulement %.1f mois (minimum vital : %.0f TND = 3 × %.0f TND/mois). " +
+                    "Priorité absolue — il vous manque %.0f TND. Épargnez %.0f TND/mois pour atteindre ce minimum en 6 mois. " +
+                    "En cas de panne matériel ou mauvaise récolte, ce fonds sera votre seule protection.",
+                    currentSavings.doubleValue(), coverageMonths, minimum.doubleValue(), avgMonthlyExpenses.doubleValue(),
+                    deficit.doubleValue(), need3Months.doubleValue());
+        }
 
         return EmergencyFundCalculatorResponse.builder()
                 .totalExpensesLast6Months(totalExpenses6m)

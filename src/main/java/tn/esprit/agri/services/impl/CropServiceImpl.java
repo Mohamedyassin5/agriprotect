@@ -25,6 +25,7 @@ public class CropServiceImpl implements ICropService {
         crop.setUser(user);
         crop.setCreatedAt(LocalDateTime.now());
         return cropRepository.save(crop);
+
     }
 
     @Override
@@ -70,4 +71,18 @@ public class CropServiceImpl implements ICropService {
         }
         cropRepository.deleteById(cropId);
     }
+
+    @Override
+    public List<Crop> searchByKeyword(String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return cropRepository.findAll();
+        }
+
+        return cropRepository
+                .findByCropTypeContainingIgnoreCaseOrTypeterresContainingIgnoreCase(
+                        keyword,
+                        keyword
+                );
+    }
+
 }

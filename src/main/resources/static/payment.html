@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement - Assurance AgriProtect</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    #card-element {
+      background-color: white;
+      padding: 14px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    #card-element:focus-within {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .loading {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen font-sans">
+
+<div class="max-w-md w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 text-white">
+    <div class="flex items-center gap-3">
+      <i class="fa-solid fa-shield-halved text-3xl"></i>
+      <div>
+        <h1 class="text-2xl font-semibold">Paiement Assurance</h1>
+        <p class="text-green-100 text-sm">AgriProtect • Sécurisé par Stripe</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-8">
+
+    <!-- Résumé du paiement -->
+    <div class="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-100">
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-gray-600">Référence assurance</span>
+        <span id="insurance-id-display" class="font-medium text-gray-900"></span>
+      </div>
+
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-gray-600">Montant à payer</span>
+        <span id="amount-display" class="text-3xl font-semibold text-green-700">— TND</span>
+      </div>
+
+      <!-- Détail pénalité (s'affiche seulement s'il y en a une) -->
+      <div id="penalty-row" class="hidden flex justify-between items-center text-sm text-orange-600">
+        <span>Pénalité de retard (10%)</span>
+        <span id="penalty-amount" class="font-medium"></span>
+      </div>
+    </div>
+
+    <!-- Formulaire -->
+    <form id="payment-form" class="space-y-6">
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Carte bancaire</label>
+        <div id="card-element" class="w-full"></div>
+        <div id="card-errors" class="mt-2 text-red-600 text-sm min-h-[1.25rem]"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nom sur la carte</label>
+          <input id="card-name" type="text" placeholder="Jean Dupont"
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input id="email" type="email" placeholder="jean.dupont@email.com"
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+      </div>
+
+      <!-- Bouton paiement -->
+      <button id="payBtn" type="button"
+              class="w-full bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-3 text-lg shadow-md">
+        <span id="pay-text">Payer maintenant</span>
+        <span id="pay-amount" class="font-bold"></span>
+      </button>
+    </form>
+
+    <!-- Sécurité -->
+    <div class="mt-8 flex items-center justify-center gap-2 text-xs text-gray-500">
+      <i class="fa-solid fa-lock"></i>
+      <span>Paiement 100% sécurisé • SSL • Protection des données</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  tailwind.config = { content: [], theme: { extend: {} } };
+
+  const stripe = Stripe("pk_test_51T4idXJ018n6rsEMLPU6Lc5Y1q2DBS84sFxSgoF42rFpRdC7wbn6a5J00AuSHj6EUGhg1NhV6fJmk7HRZzsCcqw500iOqlX3dM");
+
+  const elements = stripe.elements();
+  const card = elements.create("card", {
+    style: {
+      base: {
+        fontSize: "16px",
+        color: "#1f2937",
+        "::placeholder": { color: "#9ca3af" }
+      }
+    }
+  });
+  card.mount("#card-element");
+
+  // Récupération des paramètres URL
+  const params = new URLSearchParams(window.location.search);
+  const insuranceId = params.get("insuranceId");
+  const token = params.get("token");
+
+  if (insuranceId) {
+    document.getElementById("insurance-id-display").textContent = insuranceId;
+  }
+
+  let clientSecret = null;
+  let amount = 0;
+
+  // ==================== INITIALISATION DU PAIEMENT ====================
+  async function initPayment() {
+    if (!token) {
+      alert("Token JWT manquant dans l'URL.\nAjoutez ?token=VOTRE_TOKEN");
+      return;
+    }
+    if (!insuranceId) {
+      alert("ID de l'assurance manquant dans l'URL.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8081/agri/phase1/pay/${insuranceId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 403) {
+        alert("Erreur 403 : Accès refusé.\nVérifiez que vous êtes bien connecté avec un compte FARMER et que le token est valide.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erreur serveur : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      clientSecret = data.clientSecret;
+      amount = parseFloat(data.totalToPay) || parseFloat(data.totalAmount) || 0;
+
+      const formattedAmount = amount.toFixed(3);
+      document.getElementById("amount-display").textContent = `${formattedAmount} TND`;
+      document.getElementById("pay-amount").textContent = `${formattedAmount} TND`;
+
+      const penalty = parseFloat(data.penaltyAmount) || 0;
+      if (penalty > 0) {
+        document.getElementById("penalty-row").classList.remove("hidden");
+        document.getElementById("penalty-amount").textContent = `+ ${penalty.toFixed(3)} TND`;
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Impossible de charger le paiement :\n" + err.message);
+    }
+  }
+  initPayment();
+
+  // ==================== EXÉCUTION DU PAIEMENT ====================
+  const payBtn = document.getElementById("payBtn");
+  const cardErrors = document.getElementById("card-errors");
+
+  payBtn.addEventListener("click", async () => {
+    if (!clientSecret) {
+      alert("Le paiement n'est pas encore prêt. Veuillez patienter.");
+      return;
+    }
+
+    payBtn.disabled = true;
+    payBtn.innerHTML = `<i class="fa-solid fa-spinner loading"></i><span>Traitement en cours...</span>`;
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: card,
+          billing_details: {
+            name: document.getElementById("card-name").value || "Client AgriProtect",
+            email: document.getElementById("email").value || undefined
+          }
+        }
+      });
+
+      if (error) {
+        cardErrors.textContent = error.message;
+        payBtn.disabled = false;
+        const formatted = amount.toFixed(3);
+        payBtn.innerHTML = `<span>Payer maintenant</span><span class="font-bold">${formatted} TND</span>`;
+      }
+      else if (paymentIntent.status === "succeeded") {
+        // Page de succès
+        document.body.innerHTML = `
+          <div class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+            <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 text-center">
+              <div class="mx-auto w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+                <i class="fa-solid fa-check text-5xl text-green-600"></i>
+              </div>
+              <h2 class="text-3xl font-semibold text-green-700 mb-3">Paiement réussi !</h2>
+              <p class="text-gray-600 mb-8">Merci pour votre confiance.<br>Votre assurance est maintenant active.</p>
+              <a href="http://localhost:8081/payment-success?payment_intent=${paymentIntent.id}"
+                 class="inline-block bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-medium">
+                Voir les détails
+              </a>
+            </div>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur est survenue pendant le paiement.");
+      payBtn.disabled = false;
+      const formatted = amount.toFixed(3);
+      payBtn.innerHTML = `<span>Payer maintenant</span><span class="font-bold">${formatted} TND</span>`;
+    }
+  });
+
+  // Gestion des erreurs sur la carte
+  card.addEventListener('change', (event) => {
+    cardErrors.textContent = event.error ? event.error.message : '';
+  });
+</script>
+</body>
+</html>

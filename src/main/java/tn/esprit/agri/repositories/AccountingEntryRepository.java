@@ -28,38 +28,38 @@ public interface AccountingEntryRepository extends JpaRepository<AccountingEntry
     Optional<AccountingEntry> findByIdAndUserId(Long id, String userId);
 
     @Query("SELECT ae FROM AccountingEntry ae WHERE ae.user.id = :userId " +
-           "AND (:type IS NULL OR ae.entryType = :type) " +
-           "AND (:category IS NULL OR ae.category = :category) " +
-           "AND (:startDate IS NULL OR ae.entryDate >= :startDate) " +
-           "AND (:endDate IS NULL OR ae.entryDate <= :endDate)")
+            "AND (:type IS NULL OR ae.entryType = :type) " +
+            "AND (:category IS NULL OR ae.category = :category) " +
+            "AND (:startDate IS NULL OR ae.entryDate >= :startDate) " +
+            "AND (:endDate IS NULL OR ae.entryDate <= :endDate)")
     Page<AccountingEntry> findByFilters(@Param("userId") String userId,
-                                       @Param("type") EntryType type,
-                                       @Param("category") EntryCategory category,
-                                       @Param("startDate") LocalDate startDate,
-                                       @Param("endDate") LocalDate endDate,
-                                       Pageable pageable);
+                                        @Param("type") EntryType type,
+                                        @Param("category") EntryCategory category,
+                                        @Param("startDate") LocalDate startDate,
+                                        @Param("endDate") LocalDate endDate,
+                                        Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type")
     BigDecimal sumAmountByUserIdAndType(@Param("userId") String userId, @Param("type") EntryType type);
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.entryDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByUserIdAndTypeAndDateRange(@Param("userId") String userId,
-                                                     @Param("type") EntryType type,
-                                                     @Param("startDate") LocalDate startDate,
-                                                     @Param("endDate") LocalDate endDate);
+                                                    @Param("type") EntryType type,
+                                                    @Param("startDate") LocalDate startDate,
+                                                    @Param("endDate") LocalDate endDate);
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.category = :category AND e.entryDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByCategoryAndDateRange(@Param("userId") String userId,
-                                              @Param("type") EntryType type,
-                                              @Param("category") EntryCategory category,
-                                              @Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
+                                               @Param("type") EntryType type,
+                                               @Param("category") EntryCategory category,
+                                               @Param("startDate") LocalDate startDate,
+                                               @Param("endDate") LocalDate endDate);
 
     @Query("SELECT COUNT(e) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.entryDate BETWEEN :startDate AND :endDate")
     Long countByUserIdAndTypeAndDateRange(@Param("userId") String userId,
-                                         @Param("type") EntryType type,
-                                         @Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
+                                          @Param("type") EntryType type,
+                                          @Param("startDate") LocalDate startDate,
+                                          @Param("endDate") LocalDate endDate);
 
     @Query("SELECT COALESCE(AVG(e.amount), 0) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.category = :category AND e.entryDate BETWEEN :startDate AND :endDate")
     BigDecimal averageAmountByCategoryAndDateRange(@Param("userId") String userId,
@@ -72,8 +72,8 @@ public interface AccountingEntryRepository extends JpaRepository<AccountingEntry
     @Query("SELECT COUNT(DISTINCT e.category) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type")
     Long countDistinctCategoriesByUserIdAndType(@Param("userId") String userId, @Param("type") EntryType type);
 
-    @Query("SELECT COUNT(DISTINCT FUNCTION('MONTH', e.entryDate)) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.entryDate BETWEEN :startDate AND :endDate")
-    Long countDistinctMonthsWithEntries(@Param("userId") String userId, @Param("type") EntryType type,
+    @Query(value = "SELECT COUNT(DISTINCT MONTH(e.entry_date)) FROM accounting_entry e WHERE e.user_id = :userId AND e.entry_type = :type AND e.entry_date BETWEEN :startDate AND :endDate", nativeQuery = true)
+    Long countDistinctMonthsWithEntries(@Param("userId") String userId, @Param("type") String type,
                                         @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM AccountingEntry e WHERE e.user.id = :userId AND e.entryType = :type AND e.category = :category")
@@ -81,4 +81,6 @@ public interface AccountingEntryRepository extends JpaRepository<AccountingEntry
 
     List<AccountingEntry> findByUserIdAndEntryTypeAndCategoryAndEntryDateBetween(
             String userId, EntryType entryType, EntryCategory category, LocalDate startDate, LocalDate endDate);
+
+    Long countByUserId(String userId);
 }

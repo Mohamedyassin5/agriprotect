@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body style="margin:0;padding:0;background:#f4f9f4;font-family:Arial, sans-serif;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
+  <tr>
+    <td align="center">
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+             style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;
+              box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background:linear-gradient(90deg,#1b5e20,#2e7d32,#fbc02d);padding:22px 24px;color:white;">
+            <h1 style="margin:0;font-size:22px;letter-spacing:1px;">
+              🌿 AG<span style="color:#fff8e1;">RI</span> PROTECT 🛡️
+            </h1>
+            <div style="font-size:13px;opacity:0.9;margin-top:4px;">
+              Sécurité & Protection de votre compte
+            </div>
+          </td>
+        </tr>
+
+        <!-- CONTENT -->
+        <tr>
+          <td style="padding:26px;">
+
+            <h2 style="margin:0 0 10px 0;color:#1b5e20;">
+              Bonjour <span th:text="${name}" style="color:#2e7d32;">Utilisateur</span>,
+            </h2>
+
+            <p style="font-size:14px;color:#374151;line-height:1.6;">
+              Vous avez demandé une réinitialisation de mot de passe pour votre compte
+              <strong style="color:#1b5e20;">Agri Protect</strong>.
+            </p>
+
+            <p style="font-size:14px;color:#374151;">
+              Voici votre code sécurisé :
+            </p>
+
+            <!-- CODE BOX -->
+            <div style="margin:18px 0;padding:18px;border-radius:16px;
+              background:#fff8e1;border:2px dashed #fbc02d;text-align:center;">
+
+              <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">CODE DE VÉRIFICATION</div>
+
+              <div style="font-size:34px;font-weight:900;letter-spacing:8px;color:#b45309;">
+                <span th:text="${code}">123456</span>
+              </div>
+            </div>
+
+            <!-- EXPIRATION -->
+            <div style="background:#ecfdf5;padding:12px 14px;border-radius:12px;
+              border:1px solid #bbf7d0;margin-top:8px;">
+    <span style="font-size:13px;color:#065f46;">
+      ⏳ Ce code expire dans
+      <strong th:text="${expiryMinutes}" style="color:#1b5e20;">10</strong> minutes.
+    </span>
+            </div>
+
+            <p style="font-size:13px;color:#6b7280;margin-top:16px;">
+              Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background:#f9fafb;padding:16px 24px;border-top:1px solid #e5e7eb;">
+
+            <p style="margin:0;font-size:12px;color:#6b7280;">
+              © <span th:text="${appName}">Agri Protect</span> – Plateforme Agricole Sécurisée 🌾
+            </p>
+
+            <p style="margin:4px 0 0 0;font-size:12px;color:#9ca3af;">
+              Cultivez en confiance • Protégez votre exploitation • Sécurité intelligente
+            </p>
+
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

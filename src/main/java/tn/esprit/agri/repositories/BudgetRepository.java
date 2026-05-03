@@ -26,6 +26,9 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     Optional<Budget> findByIdAndUserId(Long id, String userId);
 
+    boolean existsByUserIdAndCategoryAndPeriodStartAndPeriodEnd(
+            String userId, EntryCategory category, LocalDate periodStart, LocalDate periodEnd);
+
     @Query("SELECT b FROM Budget b WHERE b.user.id = :userId " +
            "AND b.periodStart <= :date AND b.periodEnd >= :date " +
            "AND (:category IS NULL OR b.category = :category)")
