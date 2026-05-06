@@ -51,26 +51,35 @@ public class QcmController {
         SolidarityFund fund = solidarityFundRepository.findById(fundId)
                 .orElseThrow(() -> new BusinessRuleException("Fonds de solidarité non trouvé", "FUND_NOT_FOUND"));
 
-        List<AiQcmResponse> generatedQuestions = aiVerificationService.generateQcm(fund.getCultureType());
+        List<tn.esprit.agri.entities.QuestionBank> bankQuestions = aiVerificationService.getRandomQuestionsFromBank(fund.getCultureType(), 5);
 
-        QcmTest test = QcmTest.builder()
-                .id(UUID.randomUUID().toString())
-                .title("Test généré par IA : Main-d'œuvre pour " + fund.getCultureType())
-                .startDate(LocalDateTime.now())
-                .endDate(LocalDateTime.now().plusMonths(1))
-                .requiredScore(60.0) // Require 60% passed
-                .discountPercentage(20.0)
-                .fund(fund)
-                .questions(new ArrayList<>())
-                .build();
+        QcmTest test = fund.getTest();
+        if (test != null) {
+            // Update existing test
+            test.getQuestions().clear();
+            test.setTitle("Test d'expertise (Mise à jour) : " + fund.getCultureType());
+            test.setEndDate(LocalDateTime.now().plusMonths(1));
+        } else {
+            // Create new test
+            test = QcmTest.builder()
+                    .id(UUID.randomUUID().toString())
+                    .title("Test d'expertise : " + fund.getCultureType())
+                    .startDate(LocalDateTime.now())
+                    .endDate(LocalDateTime.now().plusMonths(1))
+                    .requiredScore(60.0) // Require 60% passed
+                    .discountPercentage(20.0)
+                    .fund(fund)
+                    .questions(new ArrayList<>())
+                    .build();
+        }
 
-        for (AiQcmResponse aiResp : generatedQuestions) {
+        for (tn.esprit.agri.entities.QuestionBank bankQ : bankQuestions) {
             QcmQuestion question = QcmQuestion.builder()
                     .id(UUID.randomUUID().toString())
                     .test(test)
-                    .text(aiResp.getText())
-                    .options(aiResp.getOptions())
-                    .correctAnswer(aiResp.getCorrectAnswer())
+                    .text(bankQ.getText())
+                    .options(new ArrayList<>(bankQ.getOptions()))
+                    .correctAnswer(bankQ.getCorrectAnswer())
                     .build();
             test.getQuestions().add(question);
         }
@@ -81,19 +90,60 @@ public class QcmController {
     // ✅ FARMER voit les tests actifs (ADMIN peut aussi les lister)
     @GetMapping("/available")
     @PreAuthorize("hasAnyRole('FARMER', 'ADMIN')")
-    public ResponseEntity<List<QcmTest>> getAvailableTests() {
-
+    public ResponseEntity<List<Map<String, Object>>> getAvailableTests(Authentication authentication) {
         LocalDateTime now = LocalDateTime.now();
+        List<QcmTest> tests = qcmTestRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(now, now);
 
-        return ResponseEntity.ok(
-                qcmTestRepository
-                        .findByStartDateLessThanEqualAndEndDateGreaterThanEqual(now, now));
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        List<String> farmerFundIds = new ArrayList<>();
+        if (!isAdmin) {
+            User farmer = (User) authentication.getPrincipal();
+            farmerSolidarityFundRepository.findByFarmerId(farmer.getId())
+                    .forEach(m -> farmerFundIds.add(m.getSolidarityFund().getId()));
+        }
+
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (QcmTest test : tests) {
+            // Filter: Farmer only sees tests for funds they joined
+            if (!isAdmin && test.getFund() != null && !farmerFundIds.contains(test.getFund().getId())) {
+                continue;
+            }
+
+            Map<String, Object> testMap = new java.util.HashMap<>();
+            testMap.put("id", test.getId());
+            testMap.put("title", test.getTitle());
+            testMap.put("startDate", test.getStartDate());
+            testMap.put("endDate", test.getEndDate());
+            testMap.put("requiredScore", test.getRequiredScore());
+            testMap.put("discountPercentage", test.getDiscountPercentage());
+            if (test.getFund() != null) {
+                testMap.put("fund", Map.of("id", test.getFund().getId(), "name", test.getFund().getName()));
+            }
+
+            List<Map<String, Object>> questionsList = new ArrayList<>();
+            for (QcmQuestion q : test.getQuestions()) {
+                Map<String, Object> qMap = new java.util.HashMap<>();
+                qMap.put("id", q.getId());
+                qMap.put("text", q.getText());
+                qMap.put("options", q.getOptions());
+                if (isAdmin) {
+                    qMap.put("correctAnswer", q.getCorrectAnswer());
+                }
+                questionsList.add(qMap);
+            }
+            testMap.put("questions", questionsList);
+            response.add(testMap);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     // ✅ FARMER récupère les questions (sans réponses correctes)
     @GetMapping("/{testId}/questions")
     @PreAuthorize("hasRole('FARMER')")
-    public ResponseEntity<List<QcmQuestion>> getQuestions(
+    public ResponseEntity<List<Map<String, Object>>> getQuestions(
             @PathVariable String testId,
             @RequestParam(defaultValue = "5") int limit) {
 
@@ -101,12 +151,21 @@ public class QcmController {
                 .orElseThrow(() -> new BusinessRuleException("Test non trouvé", "TEST_NOT_FOUND"));
 
         List<QcmQuestion> questions = test.getQuestions();
-
         if (questions.size() > limit) {
             questions = questions.subList(0, limit);
         }
 
-        return ResponseEntity.ok(questions);
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (QcmQuestion q : questions) {
+            Map<String, Object> qMap = new java.util.HashMap<>();
+            qMap.put("id", q.getId());
+            qMap.put("text", q.getText());
+            qMap.put("options", q.getOptions());
+            // FARMER never gets the correct answer here
+            response.add(qMap);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     // ✅ FARMER soumet ses réponses

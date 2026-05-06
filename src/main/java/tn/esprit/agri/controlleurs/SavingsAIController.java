@@ -5,6 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.agri.ai.client.FinanceAIClient;
+import tn.esprit.agri.ai.dto.SavingsAlertRequest;
+import tn.esprit.agri.ai.dto.SavingsAlertResponse;
 import tn.esprit.agri.dto_savings_accountability.*;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.services.ISavingsAIService;
@@ -15,6 +18,7 @@ import tn.esprit.agri.services.ISavingsAIService;
 public class SavingsAIController {
 
     private final ISavingsAIService savingsAIService;
+    private final FinanceAIClient financeAIClient;
 
     // Feature 7: Goal Achievement Predictor
     @GetMapping("/goal/predict-achievement")
@@ -44,5 +48,13 @@ public class SavingsAIController {
     @PreAuthorize("hasRole('FARMER')")
     public ResponseEntity<EmergencyFundCalculatorResponse> calculateEmergencyFund(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(savingsAIService.calculateEmergencyFund(user.getId()));
+    }
+
+    // Feature ML: Savings Alert Prediction (Notebook Module 3)
+    @PostMapping("/ml/savings-alert")
+    @PreAuthorize("hasRole('FARMER')")
+    public ResponseEntity<SavingsAlertResponse> predictSavingsAlert(@RequestBody SavingsAlertRequest request) {
+        SavingsAlertResponse response = financeAIClient.predictSavingsAlert(request);
+        return ResponseEntity.ok(response);
     }
 }

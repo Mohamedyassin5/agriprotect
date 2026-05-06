@@ -27,7 +27,7 @@ public class DemandeCredit {
     private StatutDemande statut;
 
     @Column(nullable = false)
-    private Long agriculteurId;
+    private String agriculteurId;
 
     private Double montantDemande;
 
@@ -42,6 +42,6 @@ public class DemandeCredit {
 
     private LocalDateTime instructionAt;
     private LocalDateTime decisionAt;
-    private Long updatedBy;
+    private String updatedBy;
 
 }

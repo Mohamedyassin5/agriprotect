@@ -83,10 +83,13 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Crop> crops = new HashSet<>();
 
     @Lob
     @Column(name = "face_ref_image", columnDefinition = "LONGBLOB")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private byte[] faceRefImage;
 
     @Column(name = "face_enabled", nullable = false)

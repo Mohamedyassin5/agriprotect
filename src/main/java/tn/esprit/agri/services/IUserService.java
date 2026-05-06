@@ -19,8 +19,10 @@ public interface IUserService {
     boolean deleteUser(String id);
 
     boolean emailExists(String email);
-    
+
     List<User> searchByName(String keyword);
+
+    Optional<User> updateStatus(String id, String status);
 
     void changePassword(String email, String oldPassword, String newPassword);
 }

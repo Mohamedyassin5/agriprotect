@@ -9,8 +9,10 @@ public interface IndemnisationService {
             String farmerId,
             String fundId,
             Double amount,
-            String reason,
-            org.springframework.web.multipart.MultipartFile image);
+            String sinistreId,
+            String farmerNotes,
+            String damageType,
+            Double affectedArea);
 
     java.util.List<tn.esprit.agri.entities.FarmerSolidarityFund> getMemberships(String farmerId);
 

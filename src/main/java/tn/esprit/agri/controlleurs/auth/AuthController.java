@@ -18,6 +18,17 @@ import tn.esprit.agri.repositories.UserRepository;
 import tn.esprit.agri.security.JwtService;
 import tn.esprit.agri.services.AuthPasswordResetService;
 import tn.esprit.agri.utils.InMemoryMultipartFile;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import tn.esprit.agri.controlleurs.auth.dto.GoogleLoginRequest;
+import tn.esprit.agri.controlleurs.auth.dto.FacebookLoginRequest;
+import tn.esprit.agri.entities.enums.Role;
+import org.springframework.web.client.RestTemplate;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/agri/auth")
@@ -37,8 +48,14 @@ public class AuthController {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        String token = jwtService.generateToken(auth.getName(), role);
+        String role = auth.getAuthorities().isEmpty() ? "FARMER" : auth.getAuthorities().iterator().next().getAuthority();
+        System.out.println("====== SUPER DEBUG: USER ROLE EXTRACTED BY BACKEND = " + role + " ======");
+
+        // Fetch user to get name claims
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String token = jwtService.generateToken(auth.getName(), role, user.getFirstName(), user.getLastName(), user.getId());
         return ResponseEntity.ok(new LoginResponse(token));
     }
 
@@ -98,8 +115,75 @@ public class AuthController {
             throw new RuntimeException("Face not matched (distance=" + result.getDistance() + ")");
         }
 
-        String role = "ROLE_" + user.getRole().name();
-        String token = jwtService.generateToken(user.getEmail(), role);
+        String token = jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name(), user.getFirstName(), user.getLastName(), user.getId());
         return ResponseEntity.ok(new LoginResponse(token));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> googleLogin(@RequestBody GoogleLoginRequest request) throws Exception {
+        NetHttpTransport transport = new NetHttpTransport();
+        GsonFactory gsonFactory = GsonFactory.getDefaultInstance();
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, gsonFactory)
+                .setAudience(Collections.singletonList("912952078302-4v1btjbicaoflhfuhfdhpmkb8st3b5mo.apps.googleusercontent.com"))
+                .build();
+
+        GoogleIdToken idToken = verifier.verify(request.getIdToken());
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                // Register new user
+                User newUser = User.builder()
+                        .email(email)
+                        .firstName((String) payload.get("given_name"))
+                        .lastName((String) payload.get("family_name"))
+                        .role(Role.FARMER)
+                        .password(UUID.randomUUID().toString()) // Dummy password for Google users
+                        .score(50.0f)
+                        .faceEnabled(false)
+                        .status(tn.esprit.agri.entities.enums.Status.ACTIVE)
+                        .build();
+                return userRepository.save(newUser);
+            });
+
+            String token = jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name(), user.getFirstName(), user.getLastName(), user.getId());
+            return ResponseEntity.ok(new LoginResponse(token));
+        } else {
+            throw new RuntimeException("Invalid Google ID token.");
+        }
+    }
+
+    @PostMapping("/facebook")
+    public ResponseEntity<LoginResponse> facebookLogin(@RequestBody FacebookLoginRequest request) {
+        String url = "https://graph.facebook.com/me?fields=id,first_name,last_name,email&access_token=" + request.getAccessToken();
+        RestTemplate restTemplate = new RestTemplate();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fbUser = restTemplate.getForObject(url, Map.class);
+
+        if (fbUser != null && fbUser.get("email") != null) {
+            String email = (String) fbUser.get("email");
+
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                User newUser = User.builder()
+                        .email(email)
+                        .firstName((String) fbUser.get("first_name"))
+                        .lastName((String) fbUser.get("last_name"))
+                        .role(Role.FARMER)
+                        .password(UUID.randomUUID().toString())
+                        .score(50.0f)
+                        .faceEnabled(false)
+                        .status(tn.esprit.agri.entities.enums.Status.ACTIVE)
+                        .build();
+                return userRepository.save(newUser);
+            });
+
+            String token = jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name(), user.getFirstName(), user.getLastName(), user.getId());
+            return ResponseEntity.ok(new LoginResponse(token));
+        } else {
+            throw new RuntimeException("Validation Facebook échouée ou email non fourni.");
+        }
     }
 }

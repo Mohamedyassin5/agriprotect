@@ -31,12 +31,12 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
     @Override
     public List<Risque> detectRisks(Crop crop) {
         log.info("Detecting risks for crop: {} ({})", crop.getId(), crop.getCropType());
-        
+
         List<Risque> detected = new ArrayList<>();
-        
+
         try {
             WeatherData weather = weatherService.getCurrentWeatherByCrop(crop);
-            
+
             // Vérifier température maximale
             if (weather.getTemperature() != null && crop.getMaxTemperature() != null) {
                 if (weather.getTemperature() > crop.getMaxTemperature()) {
@@ -52,7 +52,7 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
                     detected.add(risque);
                 }
             }
-            
+
             // Vérifier température minimale
             if (weather.getTemperature() != null && crop.getMinTemperature() != null) {
                 if (weather.getTemperature() < crop.getMinTemperature()) {
@@ -68,7 +68,7 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
                     detected.add(risque);
                 }
             }
-            
+
             // Vérifier humidité maximale
             if (weather.getHumidity() != null && crop.getMaxHumidity() != null) {
                 if (weather.getHumidity() > crop.getMaxHumidity()) {
@@ -84,7 +84,7 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
                     detected.add(risque);
                 }
             }
-            
+
             // Vérifier humidité minimale
             if (weather.getHumidity() != null && crop.getMinHumidity() != null) {
                 if (weather.getHumidity() < crop.getMinHumidity()) {
@@ -100,11 +100,11 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
                     detected.add(risque);
                 }
             }
-            
+
         } catch (Exception e) {
             log.error("Error detecting risks for crop {}: ", crop.getId(), e);
         }
-        
+
         return detected;
     }
 
@@ -113,25 +113,25 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
         log.info("Running scheduled risk detection for all crops");
         List<Crop> allCrops = cropRepository.findAll();
         List<Risque> allDetected = new ArrayList<>();
-        
+
         for (Crop crop : allCrops) {
             List<Risque> detected = detectRisks(crop);
             allDetected.addAll(detected);
         }
-        
+
         return allDetected;
     }
 
     @Override
     public void checkAndCreateSinistre(Crop crop) {
         List<Risque> risks = detectRisks(crop);
-        
+
         for (Risque risk : risks) {
             // Vérifier si un risque similaire non résolu existe déjà
             boolean alreadyExists = risqueRepository.findUnresolvedByCropId(crop.getId())
                     .stream()
                     .anyMatch(r -> r.getTypeSinistre() == risk.getTypeSinistre());
-            
+
             if (!alreadyExists) {
                 // Sauvegarder directement sans vérification de quota (la logique de quota météo est supprimée)
                 risqueRepository.save(risk);
@@ -147,11 +147,23 @@ public class RiskDetectionServiceImpl implements IRiskDetectionService {
             risque.setResolvedAt(LocalDateTime.now());
             risqueRepository.save(risque);
             log.info("Resolved risque: {}", risqueId);
+
+            try {
+                // Initialize lazy collections if needed, or since we are in @Transactional it's fine
+                tn.esprit.agri.services.EmailService emailService = org.springframework.web.context.support.WebApplicationContextUtils
+                        .getRequiredWebApplicationContext(
+                                ((org.springframework.web.context.request.ServletRequestAttributes)
+                                        org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()).getRequest().getServletContext()
+                        ).getBean(tn.esprit.agri.services.EmailService.class);
+                emailService.sendRisqueResolvedEmail(risque);
+            } catch (Exception e) {
+                log.error("Failed to send risque email", e);
+            }
         });
     }
 
     private Risque createRisque(Crop crop, RiskType type, Float currentValue,
-                                     Float maxAllowed, Float minAllowed, Severity severity, String description) {
+                                Float maxAllowed, Float minAllowed, Severity severity, String description) {
         return Risque.builder()
                 .crop(crop)
                 .user(crop.getUser())

@@ -175,9 +175,9 @@ public class SavingsGoalServiceImpl implements ISavingsGoalService {
         if (sumOthers.add(newPct).compareTo(BigDecimal.valueOf(100)) > 0) {
             throw new IllegalArgumentException(
                     "La somme des pourcentages personnalisés dépasse 100%. "
-                    + "Les autres objectifs utilisent déjà " + sumOthers + "%. "
-                    + "Maximum disponible pour cet objectif : "
-                    + BigDecimal.valueOf(100).subtract(sumOthers) + "%.");
+                            + "Les autres objectifs utilisent déjà " + sumOthers + "%. "
+                            + "Maximum disponible pour cet objectif : "
+                            + BigDecimal.valueOf(100).subtract(sumOthers) + "%.");
         }
     }
 

@@ -12,5 +12,5 @@ public class DecisionFinaleDto {
     private DecisionCredit decision;
 
     private String commentaire;
-    private Long actorId;
+    private String actorId;
 }

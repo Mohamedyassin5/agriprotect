@@ -8,7 +8,7 @@ import tn.esprit.agri.entities.enums.StatutDemande;
 @Builder
 public class DemandeAnalysisReportDto {
     private Long demandeId;
-    private Long agriculteurId;
+    private String agriculteurId;
     private StatutDemande statut;
     private Double montantDemande;
     private Double revenuBrut;

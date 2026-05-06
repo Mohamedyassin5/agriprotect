@@ -30,6 +30,13 @@ public class BudgetServiceImpl implements IBudgetService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (budgetRepository.existsByUserIdAndCategoryAndPeriodStartAndPeriodEnd(
+                userId, request.getCategory(), request.getPeriodStart(), request.getPeriodEnd())) {
+            throw new IllegalArgumentException(
+                    "Un budget pour la catégorie '" + request.getCategory() +
+                            "' existe déjà pour cette période (" + request.getPeriodStart() + " → " + request.getPeriodEnd() + ")");
+        }
+
         Budget budget = new Budget();
         budget.setUser(user);
         budget.setPeriodType(request.getPeriodType());
@@ -45,7 +52,7 @@ public class BudgetServiceImpl implements IBudgetService {
     @Override
     @Transactional(readOnly = true)
     public Page<BudgetResponse> getBudgets(String userId, BudgetPeriodType periodType, EntryCategory category,
-                                          LocalDate startDate, LocalDate endDate, Pageable pageable) {
+                                           LocalDate startDate, LocalDate endDate, Pageable pageable) {
         Page<Budget> budgets = budgetRepository.findByFilters(userId, periodType, category, startDate, endDate, pageable);
         return budgets.map(this::toResponse);
     }

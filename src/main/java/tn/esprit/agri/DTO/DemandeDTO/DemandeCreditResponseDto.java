@@ -14,7 +14,7 @@ public class DemandeCreditResponseDto {
     private Long id;
     private LocalDate dateDemande;
     private StatutDemande statut;
-    private Long agriculteurId;
+    private String agriculteurId;
     private Double montantDemande;
     private String description;
 }

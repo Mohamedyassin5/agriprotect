@@ -25,16 +25,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import tn.esprit.agri.DTO.InsuranceResponse;
-import tn.esprit.agri.DTO.PaymentResponse;
-import tn.esprit.agri.DTO.PremiumEstimationResponse;
-import tn.esprit.agri.DTO.SignRequestDTO;
+import tn.esprit.agri.DTO.*;
 import tn.esprit.agri.entities.Insurance;
 import tn.esprit.agri.entities.Payment;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.entities.enums.*;
 import tn.esprit.agri.repositories.InsuranceRepository;
 import tn.esprit.agri.repositories.PaymentRepository;
+import tn.esprit.agri.repositories.UserRepository;
 import tn.esprit.agri.services.*;
 
 import java.io.IOException;
@@ -42,6 +40,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,94 +61,126 @@ public class Phase1Controller {
     private final PaymentReminderService paymentReminderService;
     private final PaymentRepository paymentRepository;
     private final IAIRiskAssessmentService aiRiskService;
+    private final UserRepository userRepository;
 
     @GetMapping("/estimate")
-    @Operation(summary = "Estimer avec IA")
+    @Operation(summary = "Estimation classique avec IA d'ajustement")
     public ResponseEntity<PremiumEstimationResponse> estimate(
             @RequestParam(defaultValue = "STANDARD") CoverageType coverType,
-            Authentication authentication) {   // ← Garde Authentication
+            Authentication authentication) {
 
-        // Vérification plus robuste
+        log.info("=== DÉBUT estimate ===");
+
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(null); // ou throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-
-        User currentUser = (User) authentication.getPrincipal();
-
-        if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         try {
-            PremiumEstimationResponse response = service.calculateEstimation(currentUser.getId(), coverType);
+            // ✅ Toujours recharger depuis la base
+            User authUser = (User) authentication.getPrincipal();
+
+            User currentUser = userRepository.findById(authUser.getId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+
+            PremiumEstimationResponse response =
+                    service.calculateEstimation(currentUser.getId(), coverType);
+
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            log.error("Erreur lors de l'estimation du premium pour user {}", currentUser.getId(), e);
+            log.error("Erreur lors de l'estimation classique", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    // ==============================
+    // ESTIMATION IA COMPLÈTE
+    // ==============================
+
     @GetMapping("/estimate/ai-complete")
-    @Operation(summary = "Estimer avec IA complète (l'IA calcule tout)")
+    @Operation(summary = "Estimation complète pilotée par IA")
     public ResponseEntity<PremiumEstimationResponse> estimateWithAIComplete(
-            @RequestParam(defaultValue = "STANDARD") CoverageType coverType,
             Authentication authentication) {
 
         log.info("=== DÉBUT estimateWithAIComplete ===");
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            log.error("Authentication null ou non authentifié");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
-        log.info("User ID: {}", currentUser.getId());
-
         try {
-            IAIRiskAssessmentService.AICompleteEstimationResult aiResult =
-                    aiRiskService.calculateCompleteEstimation(currentUser.getId(), coverType);
 
-            if (aiResult == null || aiResult.detailsByFormula() == null) {
-                log.error("Résultat IA null pour user {}", currentUser.getId());
+            // ✅ Recharge l'utilisateur depuis la base
+            User authUser = (User) authentication.getPrincipal();
+
+            User currentUser = userRepository.findById(authUser.getId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+
+            // ✅ Appel IA (sans coverType)
+            IAIRiskAssessmentService.AICompleteEstimationResult aiResult =
+                    aiRiskService.calculateCompleteEstimation(currentUser.getId(), null);
+
+            if (aiResult == null
+                    || aiResult.detailsByFormula() == null
+                    || aiResult.detailsByFormula().isEmpty()) {
+
+                log.error("Résultat IA invalide pour user {}", currentUser.getId());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            // Utiliser la formule suggérée par l'IA pour le totalPremium
+            // ✅ Formule suggérée par l’IA
             String finalFormula = aiResult.suggestedFormula();
-            var suggestedDetail = aiResult.detailsByFormula().get(finalFormula);
 
+            PremiumEstimationResponse.FormulaDetail suggestedDetail =
+                    aiResult.detailsByFormula().get(finalFormula);
+
+            // ✅ Fallback technique
             if (suggestedDetail == null) {
-                log.warn("Formule suggérée {} non trouvée, fallback sur {}", finalFormula, coverType.name());
-                finalFormula = coverType.name();
-                suggestedDetail = aiResult.detailsByFormula().get(finalFormula);
+                log.warn("Formule IA invalide → fallback STANDARD");
+                finalFormula = "STANDARD";
+                suggestedDetail = aiResult.detailsByFormula().get("STANDARD");
             }
 
-            log.info("Résultat IA: riskScore={}, suggestedFormula={}, totalPremium={}",
-                    aiResult.riskScore(), finalFormula, suggestedDetail.getPremiumAmount());
+            if (suggestedDetail == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
 
+            // ✅ Construction raison métier
+            String recommendationReason = service.buildRecommendationReason(
+                    finalFormula,
+                    currentUser,
+                    1.0,
+                    aiResult.riskLevel()
+            );
+
+            // ✅ Construction réponse finale
             PremiumEstimationResponse response = PremiumEstimationResponse.builder()
                     .totalPremium(suggestedDetail.getPremiumAmount())
                     .detailsByFormula(aiResult.detailsByFormula())
                     .suggestedFormula(finalFormula)
+                    .recommendationReason(recommendationReason)
                     .suggestedInsuredAmount(suggestedDetail.getInsuredAmount())
-                    .minAllowedInsuredAmount(suggestedDetail.getInsuredAmount().multiply(BigDecimal.valueOf(0.8)))
-                    .maxAllowedInsuredAmount(suggestedDetail.getInsuredAmount().multiply(BigDecimal.valueOf(1.2)))
+                    .minAllowedInsuredAmount(
+                            suggestedDetail.getInsuredAmount().multiply(BigDecimal.valueOf(0.8)))
+                    .maxAllowedInsuredAmount(
+                            suggestedDetail.getInsuredAmount().multiply(BigDecimal.valueOf(1.2)))
                     .aiRiskScore(aiResult.riskScore())
                     .riskLevel(aiResult.riskLevel())
                     .riskFactors(aiResult.riskFactors())
                     .aiInsights(aiResult.insights())
                     .build();
 
+            log.info("✅ Estimation IA réussie pour user {}", currentUser.getId());
+
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Erreur lors de l'estimation IA complète", e);
+            log.error("Erreur critique estimation IA", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
     @PostMapping("/subscribe")
     public ResponseEntity<InsuranceResponse> subscribe(
             @RequestParam CoverageType coverType,
@@ -189,6 +220,22 @@ public class Phase1Controller {
             resp.setMessage("Police active");
             return resp;
         }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/my-insurances-all")
+    @PreAuthorize("hasRole('FARMER')")
+    public ResponseEntity<List<InsuranceResponse>> getAllMyInsurances(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = (User) auth.getPrincipal();
+        List<Insurance> insurances = insuranceRepository.findByUserId(user.getId());
+
+        List<InsuranceResponse> responses = insurances.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(responses);
     }
@@ -287,22 +334,63 @@ public class Phase1Controller {
         response.setStartDate(insurance.getStartDate());
         response.setEndDate(insurance.getEndDate());
         response.setStatus(insurance.getStatus());
-        response.setMessage("Police signée et active !");
+
+        // === NOUVEAUX CHAMPS AJOUTÉS ===
+        response.setPaymentMode(insurance.getPaymentMode().name());
+        response.setTotalPremium(insurance.getTotalPremium());
+        response.setAmountPerPayment(insurance.getAmountPerPayment());
+        response.setNumberOfPayments(insurance.getNumberOfPayments());
+        response.setRemainingPayments(insurance.getRemainingPayments());
+        response.setNextPaymentDue(insurance.getNextPaymentDue());
+        response.setPenaltyAmount(insurance.getPenaltyAmount());
+        response.setOverdue(insurance.isOverdue());
+        if (insurance.getSignedAt() != null) {
+            // Format: 2023-10-27T14:30:00
+            String formattedDate = insurance.getSignedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            response.setSignedAt(formattedDate);
+        } else {
+            response.setSignedAt(null);
+        }
+
+        if (insurance.getSignatureImage() != null) {
+            String base64 = Base64.getEncoder().encodeToString(insurance.getSignatureImage());
+            response.setSignatureImage("data:image/png;base64," + base64);
+        }
+        // Calcul unpaidMonths à mapper dans la réponse
+        LocalDate ref = insurance.getSuspendedAt() != null
+                ? insurance.getSuspendedAt()
+                : insurance.getNextPaymentDue();
+
+        int unpaidMonths = 1;
+        if (ref != null && ref.isBefore(LocalDate.now())
+                && insurance.getStatus() == InsuranceStatus.SUSPENDED) {
+            unpaidMonths = Math.max(1,
+                    (int) java.time.temporal.ChronoUnit.MONTHS.between(ref, LocalDate.now()));
+        }
+        response.setUnpaidMonths(unpaidMonths);
+        response.setSuspendedAt(insurance.getSuspendedAt());
+        response.setSignedByName(insurance.getSignedByName());
         return response;
     }
 
     @PostMapping("/pay/{insuranceId}")
+    @PreAuthorize("hasRole('FARMER')")
     public ResponseEntity<PaymentResponse> initiatePayment(
             @PathVariable String insuranceId,
             Authentication auth) {
 
-        if (auth == null || !auth.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        User user = (User) auth.getPrincipal();
+        Insurance insurance = insuranceRepository.findByIdAndUserId(insuranceId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // Si la police est en retard → utiliser le flux régularisation (avec pénalité 10%)
+        if (insurance.getStatus() == InsuranceStatus.OVERDUE
+                || insurance.getStatus() == InsuranceStatus.SUSPENDED) {
+            PaymentResponse response = paymentService.initiateRegularizationPayment(insuranceId, user.getId());
+            return ResponseEntity.ok(response);
         }
 
-        User user = (User) auth.getPrincipal();
         PaymentResponse response = paymentService.initiateStripePayment(insuranceId, user.getId());
-
         return ResponseEntity.ok(response);
     }
 
@@ -529,5 +617,16 @@ public class Phase1Controller {
                 .filename("facture_" + insuranceId + ".pdf").build());
 
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+    }
+    @GetMapping("/{insuranceId}/invoice-data")
+    @PreAuthorize("hasRole('FARMER') or hasRole('ADMIN')")
+    @Operation(summary = "Données enrichies de la facture (montant restant, historique...)")
+    public ResponseEntity<InvoiceDTO> getInvoiceData(
+            @PathVariable String insuranceId,
+            Authentication auth) {
+
+        User user = (User) auth.getPrincipal();
+        InvoiceDTO invoice = paymentService.getInvoiceData(insuranceId, user.getId());
+        return ResponseEntity.ok(invoice);
     }
 }

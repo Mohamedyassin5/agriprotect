@@ -24,6 +24,10 @@ public class IndemnisationRequest {
     @JoinColumn(name = "fund_id", nullable = false)
     private SolidarityFund fund;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sinistre_id")
+    private Sinistre sinistre;
+
     @Column(nullable = false)
     private Double requestedAmount;
 
@@ -36,6 +40,16 @@ public class IndemnisationRequest {
 
     @Column(columnDefinition = "TEXT")
     private String requestReason;
+
+    @Column(columnDefinition = "TEXT")
+    private String farmerNotes;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private DamageType damageType;
+
+    @Column
+    private Double affectedArea;
 
     @Column(columnDefinition = "TEXT")
     private String refusalReason;
@@ -59,5 +73,12 @@ public class IndemnisationRequest {
         PENDING,
         APPROVED,
         REFUSED
+    }
+
+    public enum DamageType {
+        RECOLTE,
+        EQUIPEMENT,
+        INFRASTRUCTURE,
+        AUTRE
     }
 }

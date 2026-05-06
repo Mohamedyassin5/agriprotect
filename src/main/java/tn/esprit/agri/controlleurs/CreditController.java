@@ -16,7 +16,7 @@ import tn.esprit.agri.services.PortfolioAnalyticsService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/credits")
+@RequestMapping("/agri/api/credits")
 @RequiredArgsConstructor
 public class CreditController {
 

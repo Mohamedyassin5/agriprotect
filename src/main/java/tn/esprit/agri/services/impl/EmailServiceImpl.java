@@ -642,4 +642,90 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public void sendRisqueResolvedEmail(tn.esprit.agri.entities.Risque risque) {
+        User user = risque.getUser();
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+            return;
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(user.getEmail());
+            helper.setSubject("✅ Alerte levée : Risque résolu pour votre culture");
+
+            String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
+            String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            if (fullName.isEmpty()) fullName = "Cher agriculteur";
+
+            String cropName = risque.getCrop() != null ? risque.getCrop().getCropType() : "votre culture";
+
+            String body = String.format(
+                    "Bonjour %s,\n\n" +
+                            "Excellente nouvelle ! L'alerte de risque (%s) détectée le %s sur **%s** a été marquée comme **résolue** par nos experts.\n\n" +
+                            "La situation est désormais sous contrôle. N'hésitez pas à continuer la surveillance de votre exploitation via notre plateforme AgriProtect.\n\n" +
+                            "Merci pour votre vigilance,\nL'équipe AgriProtect",
+                    fullName,
+                    risque.getTypeSinistre(),
+                    risque.getDetectedAt() != null ? risque.getDetectedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "récemment",
+                    cropName
+            );
+
+            helper.setText(body);
+            mailSender.send(message);
+
+            log.info("Email de résolution de risque envoyé à {}", user.getEmail());
+
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de résolution de risque", e);
+        }
+    }
+
+    @Override
+    public void sendSinistreResolvedEmail(tn.esprit.agri.entities.Sinistre sinistre) {
+        User user = sinistre.getUser();
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+            return;
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(user.getEmail());
+            helper.setSubject("✅ Dossier clôturé : Déclaration de sinistre résolue");
+
+            String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
+            String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            if (fullName.isEmpty()) fullName = "Cher agriculteur";
+
+            String cropName = sinistre.getCrop() != null ? sinistre.getCrop().getCropType() : "votre culture";
+
+            String body = String.format(
+                    "Bonjour %s,\n\n" +
+                            "Nous tenons à vous informer que votre dossier de sinistre (%s) déclaré le %s concernant **%s** a été entièrement **résolu et clôturé** par notre équipe d'administration.\n\n" +
+                            "Nous espérons que l'accompagnement d'AgriProtect a été à la hauteur de vos attentes. Vous pouvez consulter l'historique complet dans votre espace personnel.\n\n" +
+                            "Cordialement,\nL'équipe AgriProtect",
+                    fullName,
+                    sinistre.getTypeSinistre(),
+                    sinistre.getDateCatastrophe() != null ? sinistre.getDateCatastrophe().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "récemment",
+                    cropName
+            );
+
+            helper.setText(body);
+            mailSender.send(message);
+
+            log.info("Email de résolution de sinistre envoyé à {}", user.getEmail());
+
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de résolution de sinistre", e);
+        }
+    }
+
 }

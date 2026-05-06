@@ -14,13 +14,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/agri/crops")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CropController {
 
     private final ICropService cropService;
 
     @PostMapping("/user/{userId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'FARMER')")
     public ResponseEntity<Crop> createCropForUser(@PathVariable String userId, @Valid @RequestBody CropRequest req) {
         Crop crop = Crop.builder()
                 .cropType(req.getCropType())
@@ -90,5 +88,15 @@ public class CropController {
     public ResponseEntity<List<Crop>> searchCrops(@RequestParam String keyword) {
         List<Crop> crops = cropService.searchByKeyword(keyword);
         return ResponseEntity.ok(crops);
+    }
+
+    @PostMapping("/{id}/estimate-value")
+    public ResponseEntity<Crop> estimateCropValue(@PathVariable String id) {
+        try {
+            Crop estimatedCrop = cropService.estimateCropValue(id);
+            return ResponseEntity.ok(estimatedCrop);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

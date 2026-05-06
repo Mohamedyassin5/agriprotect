@@ -303,18 +303,37 @@ public class SavingsAccountServiceImpl implements ISavingsAccountService {
         List<RecommendationResponse.Recommendation> recommendations = new ArrayList<>();
 
         if (disposableIncome.compareTo(BigDecimal.ZERO) > 0) {
+            double currentRate = monthlyIncome.compareTo(BigDecimal.ZERO) > 0
+                    ? disposableIncome.divide(monthlyIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0;
             recommendations.add(RecommendationResponse.Recommendation.builder()
                     .category("SAVINGS_RATE")
-                    .recommendation("Save at least 20% of your disposable income")
+                    .recommendation(String.format(
+                            "Votre revenu disponible mensuel est de %.0f TND (revenus : %.0f TND − dépenses : %.0f TND). " +
+                                    "En épargnant 20%% de ce disponible, vous mettez %.0f TND de côté chaque mois. " +
+                                    "Actuellement votre taux d'épargne est de %.0f%% — %s",
+                            disposableIncome.doubleValue(), monthlyIncome.doubleValue(), monthlyExpenses.doubleValue(),
+                            recommendedSavings.doubleValue(), currentRate,
+                            currentRate >= 20
+                                    ? "objectif atteint ! Continuez à ce rythme."
+                                    : String.format("il vous manque %.0f TND/mois pour atteindre cet objectif.", recommendedSavings.subtract(disposableIncome.multiply(BigDecimal.valueOf(currentRate / 100))).abs().doubleValue())))
                     .priority("HIGH")
                     .potentialSavings(recommendedSavings)
                     .build());
         }
 
         if (monthlyExpenses.compareTo(monthlyIncome.multiply(BigDecimal.valueOf(0.8))) > 0) {
+            double ratio = monthlyIncome.compareTo(BigDecimal.ZERO) > 0
+                    ? monthlyExpenses.divide(monthlyIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0;
+            BigDecimal targetExpenses = monthlyIncome.multiply(BigDecimal.valueOf(0.8)).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal reduction = monthlyExpenses.subtract(targetExpenses).setScale(0, RoundingMode.HALF_UP);
             recommendations.add(RecommendationResponse.Recommendation.builder()
                     .category("EXPENSE_REDUCTION")
-                    .recommendation("Your expenses are high. Consider reducing non-essential spending")
+                    .recommendation(String.format(
+                            "Vos dépenses (%.0f TND/mois) représentent %.0f%% de vos revenus (%.0f TND/mois) — au-dessus du seuil critique de 80%%. " +
+                                    "Pour atteindre un ratio sain, réduisez de %.0f TND/mois (objectif : %.0f TND/mois). " +
+                                    "Commencez par les catégories TRANSPORT et OTHER, généralement les plus flexibles.",
+                            monthlyExpenses.doubleValue(), ratio, monthlyIncome.doubleValue(),
+                            reduction.doubleValue(), targetExpenses.doubleValue()))
                     .priority("MEDIUM")
                     .potentialSavings(monthlyExpenses.multiply(BigDecimal.valueOf(0.1)))
                     .build());

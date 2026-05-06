@@ -26,12 +26,14 @@ public class IndemnisationController {
      * "reason": "Perte de récolte"
      * }
      */
-    @PostMapping(value = "/request", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/request", consumes = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<?> requestIndemnisation(
-            @RequestParam("image") org.springframework.web.multipart.MultipartFile image,
             @RequestParam("fundId") String fundId,
             @RequestParam("amount") Double amount,
-            @RequestParam("reason") String reason,
+            @RequestParam("sinistreId") String sinistreId,
+            @RequestParam(value = "farmerNotes", required = false) String farmerNotes,
+            @RequestParam(value = "damageType", required = false) String damageType,
+            @RequestParam(value = "affectedArea", required = false) Double affectedArea,
             org.springframework.security.core.Authentication authentication) {
         try {
             tn.esprit.agri.entities.User user = (tn.esprit.agri.entities.User) authentication.getPrincipal();
@@ -39,8 +41,10 @@ public class IndemnisationController {
                     user.getId(),
                     fundId,
                     amount,
-                    reason,
-                    image);
+                    sinistreId,
+                    farmerNotes,
+                    damageType,
+                    affectedArea);
             return ResponseEntity.ok(request);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());

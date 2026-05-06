@@ -1,5 +1,6 @@
 package tn.esprit.agri.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import tn.esprit.agri.entities.enums.CoverageType;
@@ -81,12 +82,16 @@ public class Insurance {
     private InsuranceStatus status = InsuranceStatus.PENDING_SIGNATURE;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime signedAt;
 
     private String signedByName;
     @Column(length = 64)
     private String signToken;
     private LocalDateTime signTokenExpiry;
+    // Ajouter ce champ dans l'entité Insurance
+    @Column
+    private LocalDate suspendedAt;
 
     @Lob
     @Column(columnDefinition = "MEDIUMBLOB")

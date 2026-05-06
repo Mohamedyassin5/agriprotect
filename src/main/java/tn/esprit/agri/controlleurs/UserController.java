@@ -11,6 +11,9 @@ import tn.esprit.agri.controlleurs.user.dto.RegisterRequest;
 import tn.esprit.agri.controlleurs.user.dto.UpdateUserRequest;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.services.IUserService;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.*;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +25,6 @@ import java.util.Optional;
 public class UserController {
 
     private final IUserService userService;
-
 
     @PostMapping
     public ResponseEntity<?> createUser(@Valid @RequestBody RegisterRequest req) {
@@ -38,8 +40,6 @@ public class UserController {
                     .lastName(req.getLastName())
                     .phoneNumber(req.getPhoneNumber())
                     .address(req.getAddress())
-                    .role(req.getRole())
-                    .expertFundId(req.getExpertFundId())
                     .build();
 
             User createdUser = userService.createUser(user);
@@ -51,6 +51,18 @@ public class UserController {
         }
     }
 
+    // ✅ NEW: Get the currently authenticated user's profile from JWT
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            return user.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error");
+        }
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable String id) {
@@ -59,13 +71,10 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getAllUsers());
     }
-
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable String id, @Valid @RequestBody UpdateUserRequest req) {
@@ -85,30 +94,21 @@ public class UserController {
         }
     }
 
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable String id) {
-        try {
-            boolean deleted = userService.deleteUser(id);
-            if (deleted) {
-                return ResponseEntity.noContent().build();
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting user: " + e.getMessage() + " | Cause: " + 
-                          (e.getCause() != null ? e.getCause().getMessage() : "none"));
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        boolean deleted = userService.deleteUser(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-
 
     @GetMapping("/email/{email}/exists")
     public ResponseEntity<Boolean> checkEmailExists(@PathVariable String email) {
         boolean exists = userService.emailExists(email);
         return ResponseEntity.ok(exists);
     }
-
 
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam String keyword) {
@@ -118,15 +118,14 @@ public class UserController {
 
     @PutMapping("/me/password")
     public ResponseEntity<?> changeMyPassword(@Valid @RequestBody ChangePasswordRequest request,
-                                              Authentication authentication) {
+            Authentication authentication) {
         try {
-            // 1) confirm new password
             if (request.getNewPassword() == null || request.getConfirmNewPassword() == null
                     || !request.getNewPassword().equals(request.getConfirmNewPassword())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Passwords do not match");
             }
 
-            String email = authentication.getName(); // from JWT subject
+            String email = authentication.getName();
             userService.changePassword(email, request.getOldPassword(), request.getNewPassword());
 
             return ResponseEntity.ok("Password changed successfully. Please login again.");
@@ -137,29 +136,61 @@ public class UserController {
         }
     }
 
-    /**
-     * Get current authenticated user profile
-     */
-    @GetMapping("/me")
-    public ResponseEntity<?> getMyProfile(Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody java.util.Map<String, String> body) {
+        try {
+            String status = body.get("status");
+            if (status == null) {
+                return ResponseEntity.badRequest().body("Status is required");
+            }
+            Optional<User> updatedUser = userService.updateStatus(id, status);
+            return updatedUser.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        String email = authentication.getName();
-        return userService.getUserByEmail(email)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    /**
-     * Get current authenticated user balance only
-     */
-    @GetMapping("/me/balance")
-    public ResponseEntity<Double> getMyBalance(Authentication authentication) {
-        if (authentication == null) return ResponseEntity.ok(0.0);
-        String email = authentication.getName();
-        return ResponseEntity.ok(userService.getUserByEmail(email)
-                .map(User::getAccountBalance)
-                .orElse(0.0));
+    @PostMapping("/{id}/profile-image")
+    public ResponseEntity<?> uploadProfileImage(@PathVariable String id, @RequestParam("image") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("File is empty");
+            }
+
+            // 1. Create directory if not exists
+            Path root = Paths.get("uploads/profiles");
+            if (!Files.exists(root)) {
+                Files.createDirectories(root);
+            }
+
+            // 2. Generate unique filename
+            String extension = "";
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+
+            // 3. Save file
+            Files.copy(file.getInputStream(), root.resolve(filename));
+
+            // 4. Update user in DB
+            Optional<User> userOpt = userService.getUserById(id);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setProfileImage(filename);
+                userService.updateUser(id, user); // This updates the profileImage field
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Could not upload image: " + e.getMessage());
+        }
     }
 }

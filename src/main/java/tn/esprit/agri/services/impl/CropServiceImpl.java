@@ -6,6 +6,7 @@ import tn.esprit.agri.entities.Crop;
 import tn.esprit.agri.entities.User;
 import tn.esprit.agri.repositories.CropRepository;
 import tn.esprit.agri.repositories.UserRepository;
+import tn.esprit.agri.services.CropValuationAiService;
 import tn.esprit.agri.services.ICropService;
 
 import java.time.LocalDateTime;
@@ -17,29 +18,16 @@ public class CropServiceImpl implements ICropService {
 
     private final CropRepository cropRepository;
     private final UserRepository userRepository;
-    private final SolidarityFundService solidarityFundService;
+    private final CropValuationAiService cropValuationAiService;
 
     @Override
     public Crop createCropForUser(String userId, Crop crop) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-
-        // Basic Validation
-        if (crop.getSurface() == null || crop.getSurface() <= 0) {
-            throw new RuntimeException("La surface doit être supérieure à 0.");
-        }
-        if (crop.getStartDate() != null && crop.getEndDate() != null && crop.getStartDate().isAfter(crop.getEndDate())) {
-            throw new RuntimeException("La date de début doit être avant la date de fin.");
-        }
-
         crop.setUser(user);
         crop.setCreatedAt(LocalDateTime.now());
-        Crop savedCrop = cropRepository.save(crop);
+        return cropRepository.save(crop);
 
-        // Logic Work: Auto-enroll in matching solidarity funds
-        solidarityFundService.autoEnrollInMatchingFunds(user, savedCrop.getCropType());
-
-        return savedCrop;
     }
 
     @Override
@@ -97,6 +85,18 @@ public class CropServiceImpl implements ICropService {
                         keyword,
                         keyword
                 );
+    }
+
+    @Override
+    public Crop estimateCropValue(String cropId) {
+        Crop crop = getCropById(cropId);
+        Double estimatedValue = cropValuationAiService.estimateCropValue(crop);
+        if (estimatedValue != null) {
+            crop.setEstimatedValue(estimatedValue);
+            return cropRepository.save(crop);
+        } else {
+            throw new RuntimeException("Failed to calculate estimated value for crop: " + cropId);
+        }
     }
 
 }

@@ -12,4 +12,8 @@ public interface EmailService {
     // Dans l'interface EmailService
     void sendCoverageSuspendedEmail(Insurance insurance);
     void sendRegularizationConfirmationEmail(Insurance insurance);
+
+    // Nouvelles methodes de resolution
+    void sendRisqueResolvedEmail(tn.esprit.agri.entities.Risque risque);
+    void sendSinistreResolvedEmail(tn.esprit.agri.entities.Sinistre sinistre);
 }

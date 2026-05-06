@@ -13,6 +13,7 @@ public interface ICropService {
     Crop updateCrop(String cropId, Crop cropDetails);
     void deleteCrop(String cropId);
     List<Crop> searchByKeyword(String keyword);
+    Crop estimateCropValue(String cropId);
     private float estimateLandValue(String cropType, float surface) {
 
         Map<String, Float> pricePerHectare = Map.ofEntries(

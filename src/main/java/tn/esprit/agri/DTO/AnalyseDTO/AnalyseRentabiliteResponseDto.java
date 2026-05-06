@@ -18,7 +18,7 @@ public class AnalyseRentabiliteResponseDto {
     private String commentaire;
     private LocalDateTime dateAnalyse;
     private Long demandeCreditId;
-    private Long analysteId;
+    private String analysteId;
     private Double scoreFinal;
     private String recommendation;
 }

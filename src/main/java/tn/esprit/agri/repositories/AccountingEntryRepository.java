@@ -81,4 +81,6 @@ public interface AccountingEntryRepository extends JpaRepository<AccountingEntry
 
     List<AccountingEntry> findByUserIdAndEntryTypeAndCategoryAndEntryDateBetween(
             String userId, EntryType entryType, EntryCategory category, LocalDate startDate, LocalDate endDate);
+
+    Long countByUserId(String userId);
 }

@@ -106,14 +106,17 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
             expenseCount = 0L;
         }
 
+        if (totalIncome == null) totalIncome = BigDecimal.ZERO;
+        if (totalExpense == null) totalExpense = BigDecimal.ZERO;
+
         SummaryResponse response = new SummaryResponse();
         response.setPeriodStart(from);
         response.setPeriodEnd(to);
         response.setTotalIncome(totalIncome);
         response.setTotalExpenses(totalExpense);
         response.setNetIncome(totalIncome.subtract(totalExpense));
-        response.setIncomeTransactionCount(incomeCount.intValue());
-        response.setExpenseTransactionCount(expenseCount.intValue());
+        response.setIncomeTransactionCount(incomeCount != null ? incomeCount.intValue() : 0);
+        response.setExpenseTransactionCount(expenseCount != null ? expenseCount.intValue() : 0);
         return response;
     }
 
@@ -134,7 +137,7 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
             BigDecimal variance = budget.getPlannedAmount().subtract(actualSpent);
             double percentageUsed = budget.getPlannedAmount().compareTo(BigDecimal.ZERO) > 0
                     ? actualSpent.divide(budget.getPlannedAmount(), 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100)).doubleValue()
+                    .multiply(BigDecimal.valueOf(100)).doubleValue()
                     : 0.0;
             String status = variance.compareTo(BigDecimal.ZERO) >= 0 ? "OK" :
                     variance.abs().compareTo(budget.getPlannedAmount().multiply(new BigDecimal("0.1"))) <= 0 ? "WARN" : "ALERT";
@@ -288,7 +291,7 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
                 BigDecimal overspending = actualSpent.subtract(budget.getPlannedAmount());
                 double percentageOver = budget.getPlannedAmount().compareTo(BigDecimal.ZERO) > 0
                         ? overspending.divide(budget.getPlannedAmount(), 4, RoundingMode.HALF_UP)
-                            .multiply(BigDecimal.valueOf(100)).doubleValue()
+                        .multiply(BigDecimal.valueOf(100)).doubleValue()
                         : 0.0;
                 String severity = percentageOver > 50 ? "CRITICAL" : percentageOver > 20 ? "HIGH" : "MEDIUM";
 
@@ -358,6 +361,7 @@ public class AccountingEntryServiceImpl implements IAccountingEntryService {
         response.setDescription(entry.getDescription());
         response.setEntryDate(entry.getEntryDate());
         response.setSource(entry.getSource());
+        response.setUserId(entry.getUser() != null ? entry.getUser().getId() : null);
         response.setCreatedAt(entry.getCreatedAt());
         return response;
     }

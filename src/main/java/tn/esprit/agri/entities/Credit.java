@@ -40,7 +40,7 @@ public class Credit {
     private StatutCredit statut;
 
     @Column(nullable = false)
-    private Long agriculteurId;  
+    private String agriculteurId;  
 
     @Column
     private Long assuranceId;   

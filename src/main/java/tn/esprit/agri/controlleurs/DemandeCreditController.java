@@ -22,7 +22,7 @@ import tn.esprit.agri.services.IDemandeCreditService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/demandes-credit")
+@RequestMapping("/agri/api/demandes-credit")
 @RequiredArgsConstructor
 public class DemandeCreditController {
 
@@ -41,8 +41,8 @@ public class DemandeCreditController {
     }
 
     @GetMapping("/agriculteur/{agriculteurId}")
-    public ResponseEntity<List<DemandeCreditResponseDto>> getByAgriculteur(
-            @PathVariable Long agriculteurId) {
+    public ResponseEntity<List<DemandeCreditResponseDto>> getDemandesByAgriculteur(
+            @PathVariable String agriculteurId) {
         return ResponseEntity.ok(demandeCreditService.getDemandesByAgriculteur(agriculteurId));
     }
 
@@ -127,7 +127,7 @@ public class DemandeCreditController {
     @PostMapping("/{demandeId}/start-instruction")
     public ResponseEntity<DemandeCreditResponseDto> startInstruction(
             @PathVariable Long demandeId,
-            @RequestParam(required = false) Long actorId) {
+            @RequestParam(required = false) String actorId) {
         return ResponseEntity.ok(demandeCreditService.startInstruction(demandeId, actorId));
     }
 
@@ -141,14 +141,14 @@ public class DemandeCreditController {
     @PostMapping("/{demandeId}/archive")
     public ResponseEntity<DemandeCreditResponseDto> archiveDemande(
             @PathVariable Long demandeId,
-            @RequestParam(required = false) Long actorId) {
+            @RequestParam(required = false) String actorId) {
         return ResponseEntity.ok(demandeCreditService.archiveDemande(demandeId, actorId));
     }
 
     @PostMapping("/{demandeId}/cancel")
     public ResponseEntity<DemandeCreditResponseDto> cancelDemande(
             @PathVariable Long demandeId,
-            @RequestParam(required = false) Long actorId) {
+            @RequestParam(required = false) String actorId) {
         return ResponseEntity.ok(demandeCreditService.cancelDemande(demandeId, actorId));
     }
 

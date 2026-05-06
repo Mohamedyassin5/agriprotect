@@ -9,6 +9,8 @@ import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import tn.esprit.agri.entities.enums.PaymentStatus;
+import tn.esprit.agri.repositories.PaymentRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,8 @@ public class InsuranceServiceImpl implements IInsuranceService {
     private final InsuranceRepository insuranceRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    // 1. Ajouter l'injection en haut de la classe
+    private final PaymentRepository paymentRepository;
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Override
@@ -471,12 +475,17 @@ public class InsuranceServiceImpl implements IInsuranceService {
             long suspendedPolicies = insuranceRepository.countByUserIdAndStatus(userId, InsuranceStatus.SUSPENDED);
             long cancelledPolicies = insuranceRepository.countByUserIdAndStatus(userId, InsuranceStatus.CANCELLED);
 
-            // Prochain paiement le plus proche (sécurisé)
-            LocalDate nextPaymentDate = insuranceRepository.findNextPaymentDueByUserId(userId)
-                    .orElse(null);
-
-            // Total des primes à payer cette année
+            LocalDate nextPaymentDate = insuranceRepository.findNextPaymentDueByUserId(userId).orElse(null);
             BigDecimal totalPremiumDue = insuranceRepository.calculateTotalPremiumDueThisYear(userId);
+
+            // ── NOUVEAU : total réellement payé ──────────────────────────────
+            BigDecimal totalPremiumPaid = paymentRepository
+                    .findByInsuranceUserIdOrderByPaymentDateDesc(userId)
+                    .stream()
+                    .filter(p -> p.getStatus() == PaymentStatus.SUCCEEDED)
+                    .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // ─────────────────────────────────────────────────────────────────
 
             dashboard.put("totalPolicies", totalPolicies);
             dashboard.put("activePolicies", activePolicies);
@@ -486,25 +495,154 @@ public class InsuranceServiceImpl implements IInsuranceService {
             dashboard.put("cancelledPolicies", cancelledPolicies);
             dashboard.put("nextPaymentDue", nextPaymentDate);
             dashboard.put("totalPremiumDueThisYear", totalPremiumDue != null ? totalPremiumDue : BigDecimal.ZERO);
+            dashboard.put("totalPremiumPaid", totalPremiumPaid); // ← NOUVEAU
 
-            // Répartition par statut
             Map<String, Long> statusBreakdown = new HashMap<>();
             statusBreakdown.put("ACTIVE", activePolicies);
             statusBreakdown.put("PENDING_SIGNATURE", pendingPolicies);
             statusBreakdown.put("OVERDUE", overduePolicies);
             statusBreakdown.put("SUSPENDED", suspendedPolicies);
             statusBreakdown.put("CANCELLED", cancelledPolicies);
-
             dashboard.put("statusBreakdown", statusBreakdown);
-
-            log.info("Dashboard généré avec succès pour l'utilisateur {}", userId);
 
         } catch (Exception e) {
             log.error("Erreur lors de la génération du dashboard pour user {}", userId, e);
-            // On retourne quand même un dashboard partiel au lieu de planter
             dashboard.put("error", "Erreur partielle lors du chargement des données");
+            dashboard.put("totalPremiumPaid", BigDecimal.ZERO); // ← fallback
         }
 
         return dashboard;
+    }
+    private void addSinistreClausesToDocument(Document document, Insurance insurance, Language lang,
+                                              Font titleFont, Font labelFont, Font valueFont) throws Exception {
+
+        boolean isAr = lang == Language.AR;
+        boolean isEn = lang == Language.EN;
+
+        // Titre section
+        String sectionTitle = isAr ? "شروط وأحكام التعويض عن الأضرار"
+                : isEn ? "CLAIMS & COMPENSATION CONDITIONS"
+                : "CONDITIONS DE SINISTRE ET REMBOURSEMENT";
+
+        Paragraph clauseTitle = new Paragraph(sectionTitle, titleFont);
+        clauseTitle.setAlignment(isAr ? Element.ALIGN_RIGHT : Element.ALIGN_LEFT);
+        clauseTitle.setSpacingBefore(20);
+        clauseTitle.setSpacingAfter(10);
+        document.add(clauseTitle);
+
+        document.add(new Paragraph("───────────────────────────────────────────────────────"));
+        document.add(new Paragraph("\n"));
+
+        // Calcul des seuils selon la couverture
+        BigDecimal insuredAmount = insurance.getInsuredAmount();
+        BigDecimal coverageRate  = getCoverageRateFromType(insurance.getCoverageType());
+        BigDecimal franchiseRate = getFranchiseRateFromType(insurance.getCoverageType());
+
+        BigDecimal maxReimbursement   = insuredAmount.multiply(coverageRate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal franchiseThreshold = insuredAmount.multiply(franchiseRate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal partialThreshold   = insuredAmount.multiply(BigDecimal.valueOf(0.30)).setScale(2, RoundingMode.HALF_UP);
+
+        // === CLAUSE 1 : Franchise ===
+        String clause1Title = isAr ? "الشرط الأول : الحد الأدنى للتعويض (الفرنشيز)"
+                : isEn ? "CLAUSE 1 : Deductible (Franchise)"
+                : "CLAUSE 1 : Franchise (Seuil minimum de sinistre)";
+
+        String clause1Body = isAr
+                ? String.format("لا يُمنح أي تعويض إذا كانت الأضرار تقل عن نسبة %.0f%% من المبلغ المؤمن عليه، أي ما يعادل %.2f دينار تونسي. يتحمل المؤمن له هذا الجزء كلياً.",
+                franchiseRate.multiply(BigDecimal.valueOf(100)).doubleValue(), franchiseThreshold.doubleValue())
+                : isEn
+                ? String.format("No compensation shall be granted if the claim amount is below %.0f%% of the insured amount (%.2f TND). The policyholder bears this portion entirely.",
+                franchiseRate.multiply(BigDecimal.valueOf(100)).doubleValue(), franchiseThreshold.doubleValue())
+                : String.format("Aucune indemnisation ne sera accordée si le montant du sinistre est inférieur à %.0f%% du montant assuré, soit %.2f TND. Cette franchise reste entièrement à la charge de l'assuré.",
+                franchiseRate.multiply(BigDecimal.valueOf(100)).doubleValue(), franchiseThreshold.doubleValue());
+
+        addClause(document, "1", clause1Title, clause1Body, labelFont, valueFont, isAr);
+
+        // === CLAUSE 2 : Taux de remboursement et plafond ===
+        String clause2Title = isAr ? "الشرط الثاني : نسبة وسقف التعويض"
+                : isEn ? "CLAUSE 2 : Reimbursement Rate & Cap"
+                : "CLAUSE 2 : Taux et plafond de remboursement";
+
+        String clause2Body = isAr
+                ? String.format("في حال وقوع حادث زراعي، يُعوَّض المؤمن له بنسبة %.0f%% من الأضرار المثبتة، مع سقف أقصى يبلغ %.2f دينار تونسي. تُحدَّد نسبة التعويض الفعلية حسب تقرير الخبير المعيَّن من الشركة.",
+                coverageRate.multiply(BigDecimal.valueOf(100)).doubleValue(), maxReimbursement.doubleValue())
+                : isEn
+                ? String.format("In case of an agricultural loss, the insured shall be compensated at a rate of %.0f%% of the documented damages, up to a maximum of %.2f TND. The actual reimbursement rate shall be determined by the company's appointed expert.",
+                coverageRate.multiply(BigDecimal.valueOf(100)).doubleValue(), maxReimbursement.doubleValue())
+                : String.format("En cas de sinistre agricole avéré, l'assuré sera indemnisé à hauteur de %.0f%% des dommages constatés, dans la limite d'un plafond de %.2f TND. Le taux réel sera déterminé par l'expert mandaté par la compagnie.",
+                coverageRate.multiply(BigDecimal.valueOf(100)).doubleValue(), maxReimbursement.doubleValue());
+
+        addClause(document, "2", clause2Title, clause2Body, labelFont, valueFont, isAr);
+
+        // === CLAUSE 3 : Délai de déclaration et pièces justificatives ===
+        String clause3Title = isAr ? "الشرط الثالث : آجال التصريح والوثائق المطلوبة"
+                : isEn ? "CLAUSE 3 : Declaration Deadline & Required Documents"
+                : "CLAUSE 3 : Délai de déclaration et pièces justificatives";
+
+        String clause3Body = isAr
+                ? String.format("يجب على المؤمن له التصريح بالأضرار في أجل لا يتجاوز 72 ساعة من تاريخ وقوع الحادث. يستلزم الملف: صورة عن الضرر، تقرير طبيعي أو تقني، وثيقة إثبات المساحة (%.2f دينار تونسي حد أدنى للأضرار المعترف بها). كل تصريح مؤخر قد يؤدي إلى تخفيض التعويض أو رفضه.",
+                partialThreshold.doubleValue())
+                : isEn
+                ? String.format("The insured must declare any claim within 72 hours of the incident. Required documents: damage photos, natural or technical report, land ownership proof (minimum damage threshold: %.2f TND). Late declarations may result in reduced or denied compensation.",
+                partialThreshold.doubleValue())
+                : String.format("L'assuré doit déclarer tout sinistre dans un délai maximum de 72 heures après l'incident. Le dossier doit comprendre : photos des dommages, rapport d'expert ou météorologique, justificatif de surface (seuil minimum de dommages reconnus : %.2f TND). Tout retard de déclaration pourra entraîner une réduction ou un refus d'indemnisation.",
+                partialThreshold.doubleValue());
+
+        addClause(document, "3", clause3Title, clause3Body, labelFont, valueFont, isAr);
+
+        document.add(new Paragraph("\n"));
+    }
+
+    // Helper pour ajouter une clause visuellement distincte
+    private void addClause(Document document, String number, String title, String body,
+                           Font labelFont, Font valueFont, boolean isAr) throws Exception {
+
+        // Conteneur de la clause
+        PdfPTable clauseTable = new PdfPTable(1);
+        clauseTable.setWidthPercentage(90);
+        clauseTable.setSpacingBefore(8);
+        clauseTable.setSpacingAfter(8);
+
+        if (isAr) clauseTable.setRunDirection(PdfWriter.RUN_DIRECTION_RTL);
+
+        PdfPCell cell = new PdfPCell();
+        cell.setPadding(12);
+        cell.setBorderWidth(1f);
+        cell.setBorderColor(new java.awt.Color(22, 163, 74)); // vert AgriProtect
+        cell.setBackgroundColor(new java.awt.Color(240, 253, 244)); // fond vert très clair
+
+        // Titre de la clause
+        Paragraph clauseTitlePara = new Paragraph(title, labelFont);
+        clauseTitlePara.setAlignment(isAr ? Element.ALIGN_RIGHT : Element.ALIGN_LEFT);
+        clauseTitlePara.setSpacingAfter(6);
+        cell.addElement(clauseTitlePara);
+
+        // Corps de la clause
+        Paragraph clauseBodyPara = new Paragraph(body, valueFont);
+        clauseBodyPara.setAlignment(isAr ? Element.ALIGN_RIGHT : Element.ALIGN_LEFT);
+        clauseBodyPara.setLeading(16);
+        cell.addElement(clauseBodyPara);
+
+        clauseTable.addCell(cell);
+        document.add(clauseTable);
+    }
+
+    // Helpers pour récupérer les taux selon le type de couverture
+    private BigDecimal getCoverageRateFromType(CoverageType type) {
+        if (type == null) return BigDecimal.valueOf(0.75);
+        return switch (type) {
+            case BASIC    -> BigDecimal.valueOf(0.60);
+            case PREMIUM  -> BigDecimal.valueOf(0.90);
+            default       -> BigDecimal.valueOf(0.75); // STANDARD
+        };
+    }
+
+    private BigDecimal getFranchiseRateFromType(CoverageType type) {
+        if (type == null) return BigDecimal.valueOf(0.20);
+        return switch (type) {
+            case BASIC    -> BigDecimal.valueOf(0.30);
+            case PREMIUM  -> BigDecimal.valueOf(0.10);
+            default       -> BigDecimal.valueOf(0.20); // STANDARD
+        };
     }
 }

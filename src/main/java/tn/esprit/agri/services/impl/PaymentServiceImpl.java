@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import tn.esprit.agri.DTO.InvoiceDTO;
 import tn.esprit.agri.DTO.PaymentResponse;
 import tn.esprit.agri.entities.Insurance;
 import tn.esprit.agri.entities.Payment;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,18 +50,32 @@ public class PaymentServiceImpl implements PaymentService {
         Insurance insurance = insuranceRepository.findByIdAndUserId(insuranceId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Police non trouvée ou accès non autorisé"));
 
-        if (insurance.getStatus() != InsuranceStatus.ACTIVE) {
-            throw new IllegalStateException("La police doit être signée avant d'effectuer un paiement");
+        if (insurance.getStatus() != InsuranceStatus.ACTIVE
+                && insurance.getStatus() != InsuranceStatus.OVERDUE) {
+            throw new IllegalStateException(
+                    "La police doit être active ou en retard pour effectuer un paiement. " +
+                            "Pour une police suspendue, utilisez la régularisation.");
         }
 
         Stripe.apiKey = stripeSecretKey;
 
         BigDecimal amountPerPayment = insurance.getAmountPerPayment() != null ? insurance.getAmountPerPayment() : BigDecimal.ZERO;
-        BigDecimal penaltyAmount = insurance.getPenaltyAmount() != null ? insurance.getPenaltyAmount() : BigDecimal.ZERO;
+        BigDecimal penaltyAmount;
+        if (insurance.getStatus() == InsuranceStatus.OVERDUE) {
+            // Toujours 10% pour une police en retard
+            penaltyAmount = amountPerPayment.multiply(new BigDecimal("0.10"));
+            insurance.setPenaltyAmount(penaltyAmount);
+            insuranceRepository.save(insurance);
+        } else {
+            penaltyAmount = insurance.getPenaltyAmount() != null ? insurance.getPenaltyAmount() : BigDecimal.ZERO;
+        }
         BigDecimal totalToPay = amountPerPayment.add(penaltyAmount);
-
         // Stripe en USD (cents)
-        long amountInCents = totalToPay.multiply(BigDecimal.valueOf(100)).longValueExact();
+        // Même fix ligne ~67
+        long amountInCents = totalToPay
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(0, java.math.RoundingMode.HALF_UP)
+                .longValue();
 
         Map<String, String> metadata = new HashMap<>();
         metadata.put("insuranceId", insuranceId);
@@ -259,24 +275,61 @@ public class PaymentServiceImpl implements PaymentService {
 
         Stripe.apiKey = stripeSecretKey;
 
-        BigDecimal amountPerPayment = insurance.getAmountPerPayment() != null ? insurance.getAmountPerPayment() : BigDecimal.ZERO;
-        BigDecimal penaltyAmount = insurance.getPenaltyAmount() != null ? insurance.getPenaltyAmount() : BigDecimal.ZERO;
-        BigDecimal totalArrears = amountPerPayment.add(penaltyAmount);
+        BigDecimal amountPerPayment = insurance.getAmountPerPayment() != null
+                ? insurance.getAmountPerPayment() : BigDecimal.ZERO;
 
-        // USD = 2 décimales → multiplier par 100
-        long amountInCents = totalArrears.multiply(BigDecimal.valueOf(100)).longValueExact();
+        // ── Calcul du nombre de mois impayés ─────────────────────────────
+        int unpaidMonths = 1; // minimum 1
+
+        LocalDate referenceDate = insurance.getSuspendedAt() != null
+                ? insurance.getSuspendedAt()        // date réelle de suspension
+                : insurance.getNextPaymentDue();    // fallback : première échéance impayée
+
+        if (referenceDate != null && referenceDate.isBefore(LocalDate.now())) {
+            int monthsBetween = (int) java.time.temporal.ChronoUnit.MONTHS.between(
+                    referenceDate, LocalDate.now());
+            unpaidMonths = Math.max(1, monthsBetween);
+        }
+
+        // ── Total des arriérés (mois × échéance) ────────────────────────
+        BigDecimal totalUnpaid = amountPerPayment.multiply(BigDecimal.valueOf(unpaidMonths));
+
+        // ── Pénalité 10% sur le total des arriérés ───────────────────────
+        BigDecimal penaltyAmount = (insurance.getPenaltyAmount() != null
+                && insurance.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0)
+                ? insurance.getPenaltyAmount()
+                : totalUnpaid.multiply(new BigDecimal("0.10"));
+
+        // Persister la pénalité si pas encore appliquée
+        if (insurance.getPenaltyAmount() == null
+                || insurance.getPenaltyAmount().compareTo(BigDecimal.ZERO) == 0) {
+            insurance.setPenaltyAmount(penaltyAmount);
+            insurance.setOverdue(true);
+            insuranceRepository.save(insurance);
+            log.info("Pénalité calculée pour police {} : {} mois × {} = {} TND + pénalité {} TND",
+                    insurance.getPolicyNumber(), unpaidMonths, amountPerPayment, totalUnpaid, penaltyAmount);
+        }
+
+        BigDecimal totalArrears = totalUnpaid.add(penaltyAmount);
+
+        // Stripe en cents
+        long amountInCents = totalArrears
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(0, java.math.RoundingMode.HALF_UP)  // ← arrondi avant conversion
+                .longValue();
 
         Map<String, String> metadata = new HashMap<>();
         metadata.put("insuranceId", insuranceId);
         metadata.put("userId", userId);
         metadata.put("paymentType", "REGULARIZATION");
+        metadata.put("unpaidMonths", String.valueOf(unpaidMonths));
         metadata.put("policyNumber", insurance.getPolicyNumber() != null ? insurance.getPolicyNumber() : "");
 
         try {
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                     .setAmount(amountInCents)
-                    .setCurrency("usd")                    // USD pour le moment
-                    .setDescription("Régularisation police " + insurance.getPolicyNumber())
+                    .setCurrency("usd")
+                    .setDescription("Régularisation " + unpaidMonths + " mois - Police " + insurance.getPolicyNumber())
                     .putAllMetadata(metadata)
                     .setAutomaticPaymentMethods(
                             PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
@@ -286,22 +339,22 @@ public class PaymentServiceImpl implements PaymentService {
 
             PaymentIntent paymentIntent = PaymentIntent.create(params);
 
-            log.info("PaymentIntent de régularisation créé pour {} | Montant: {} TND (facturé en USD) | Intent: {}",
-                    insurance.getPolicyNumber(), totalArrears, paymentIntent.getId());
+            log.info("Régularisation {} | {} mois impayés | Total: {} TND | Intent: {}",
+                    insurance.getPolicyNumber(), unpaidMonths, totalArrears, paymentIntent.getId());
 
             return new PaymentResponse(
                     paymentIntent.getId(),
                     paymentIntent.getClientSecret(),
-                    amountPerPayment,
+                    totalUnpaid,       // "amountPerPayment" → ici = total des échéances impayées
                     penaltyAmount,
                     totalArrears,
-                    "TND",                    // On affiche en TND pour l'utilisateur
+                    "TND",
                     "REGULARIZATION",
                     insurance.getPolicyNumber()
             );
 
         } catch (StripeException e) {
-            log.error("Erreur Stripe lors de la régularisation de l'assurance {}", insuranceId, e);
+            log.error("Erreur Stripe régularisation {}", insuranceId, e);
             throw new RuntimeException("Impossible d'initialiser le paiement de régularisation", e);
         }
     }
@@ -365,5 +418,112 @@ public class PaymentServiceImpl implements PaymentService {
             log.error("Erreur lors de la génération de la facture pour la police {}", insuranceId, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Impossible de générer la facture PDF");
         }
+    }
+
+    @Override
+    public InvoiceDTO getInvoiceData(String insuranceId, String userId) {
+
+        Insurance insurance = insuranceRepository.findById(insuranceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Police non trouvée"));
+
+        if (!insurance.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette police ne vous appartient pas");
+        }
+
+        List<Payment> payments = paymentRepository.findByInsuranceOrderByPaymentDateDesc(insurance);
+        Payment lastPayment = payments.isEmpty() ? null : payments.get(0);
+
+        // ── Calculs financiers ────────────────────────────────────────────────────
+        BigDecimal amountPerPayment = nvl(insurance.getAmountPerPayment());
+        BigDecimal penaltyAmount    = nvl(insurance.getPenaltyAmount());
+        BigDecimal totalDue         = amountPerPayment.add(penaltyAmount);
+        BigDecimal annualPremium    = nvl(insurance.getPremiumAmount());   // prime annuelle
+
+        // Somme de tous les paiements réussis
+        BigDecimal totalPaid = payments.stream()
+                .filter(p -> "SUCCEEDED".equals(p.getStatus() != null ? p.getStatus().name() : ""))
+                .map(p -> nvl(p.getAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Nombre total d'échéances (vaut 0 si null)
+        int totalPayments     = insurance.getNumberOfPayments() != null ? insurance.getNumberOfPayments() : 0;
+        int remainingPayments = insurance.getRemainingPayments() != null ? insurance.getRemainingPayments() : 0;
+        int paymentsCompleted = totalPayments - remainingPayments;
+
+        // Solde restant = (prime annuelle × paiements restants / total)
+        // On calcule le solde "contractuel" restant, hors pénalités courantes
+        BigDecimal remainingBalance;
+        if (totalPayments > 0) {
+            remainingBalance = amountPerPayment.multiply(BigDecimal.valueOf(remainingPayments));
+        } else {
+            remainingBalance = annualPremium.subtract(totalPaid).max(BigDecimal.ZERO);
+        }
+
+        // ── Historique résumé ─────────────────────────────────────────────────────
+        List<InvoiceDTO.PaymentSummary> history = payments.stream()
+                .map(p -> InvoiceDTO.PaymentSummary.builder()
+                        .date(p.getPaymentDate())
+                        .amount(nvl(p.getAmount()))
+                        .penalty(nvl(p.getPenaltyAmount()))
+                        .status(p.getStatus() != null ? p.getStatus().name() : "UNKNOWN")
+                        .mode(p.getPaymentMode())
+                        .intentId(p.getPaymentIntentId())
+                        .build())
+                .collect(Collectors.toList());
+
+        // ── Numéro de facture ─────────────────────────────────────────────────────
+        String invoiceNumber = String.format("FAC-%d-%05d",
+                LocalDate.now().getYear(),
+                Math.abs(insuranceId.hashCode() % 100000));
+
+        // ── Assemblage DTO ─────────────────────────────────────────────────────────
+        return InvoiceDTO.builder()
+                .invoiceNumber(invoiceNumber)
+                .policyNumber(insurance.getPolicyNumber())
+                .insuranceId(insuranceId)
+
+                // Assuré
+                .farmerName(insurance.getUser().getFirstName() + " " + insurance.getUser().getLastName())
+                .farmerEmail(insurance.getUser().getEmail())
+                .farmerPhone(insurance.getUser().getPhoneNumber())
+                .farmerAddress(insurance.getUser().getAddress())
+
+                // Police
+                .coverageType(insurance.getCoverageType() != null ? insurance.getCoverageType().name() : "")
+                .status(insurance.getStatus() != null ? insurance.getStatus().name() : "")
+                .policyStartDate(insurance.getStartDate())
+                .policyEndDate(insurance.getEndDate())
+                .insuredAmount(nvl(insurance.getInsuredAmount()))
+                .paymentMode(insurance.getPaymentMode() != null ? insurance.getPaymentMode().name() : "")
+
+                // Paiement courant
+                .amountPerPayment(amountPerPayment)
+                .penaltyAmount(penaltyAmount)
+                .totalDue(totalDue)
+                .paymentDate(lastPayment != null ? lastPayment.getPaymentDate() : null)
+                .paymentIntentId(lastPayment != null ? lastPayment.getPaymentIntentId() : null)
+                .paymentStatus(lastPayment != null && lastPayment.getStatus() != null
+                        ? lastPayment.getStatus().name() : null)
+
+                // Suivi financier
+                .annualPremium(annualPremium)
+                .totalPaid(totalPaid)
+                .remainingBalance(remainingBalance)
+                .totalPayments(totalPayments)
+                .paymentsCompleted(paymentsCompleted)
+                .remainingPayments(remainingPayments)
+                .nextPaymentDue(insurance.getNextPaymentDue())
+
+                // Historique
+                .paymentHistory(history)
+
+                // Date facture
+                .invoiceDate(LocalDate.now())
+                .build();
+    }
+
+    /** Sécurité null → BigDecimal.ZERO */
+    private BigDecimal nvl(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 }

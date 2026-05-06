@@ -1,5 +1,6 @@
 package tn.esprit.agri.services;
 
+import tn.esprit.agri.DTO.InvoiceDTO;
 import tn.esprit.agri.DTO.PaymentResponse;
 import tn.esprit.agri.DTO.SignRequestDTO;
 import tn.esprit.agri.entities.Insurance;
@@ -44,4 +45,5 @@ public interface PaymentService {
      * @return Tableau de bytes du PDF
      */
     byte[] generateInvoicePdf(String insuranceId, String userId);
+    InvoiceDTO getInvoiceData(String insuranceId, String userId);
 }

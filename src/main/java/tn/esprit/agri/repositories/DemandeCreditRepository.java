@@ -14,9 +14,9 @@ public interface DemandeCreditRepository extends JpaRepository<DemandeCredit, Lo
 
     List<DemandeCredit> findByStatut(StatutDemande statut);
 
-    List<DemandeCredit> findByAgriculteurId(Long agriculteurId);
+    List<DemandeCredit> findByAgriculteurId(String agriculteurId);
 
     List<DemandeCredit> findByDateDemandeBetween(LocalDate debut, LocalDate fin);
 
-    List<DemandeCredit> findByStatutAndAgriculteurId(StatutDemande statut, Long agriculteurId);
+    List<DemandeCredit> findByStatutAndAgriculteurId(StatutDemande statut, String agriculteurId);
 }

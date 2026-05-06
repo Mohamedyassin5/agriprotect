@@ -18,7 +18,7 @@ public class AuditServiceImpl implements AuditService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void log(String module, String action, Long entityId, Object beforeState, Object afterState, Long actorId) {
+    public void log(String module, String action, Long entityId, Object beforeState, Object afterState, String actorId) {
         AuditLog log = AuditLog.builder()
                 .module(module)
                 .action(action)

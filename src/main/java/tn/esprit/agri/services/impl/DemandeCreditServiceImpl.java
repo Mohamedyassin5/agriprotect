@@ -68,7 +68,7 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
     }
 
     @Override
-    public List<DemandeCreditResponseDto> getDemandesByAgriculteur(Long agriculteurId) {
+    public List<DemandeCreditResponseDto> getDemandesByAgriculteur(String agriculteurId) {
         return demandeCreditRepository.findByAgriculteurId(agriculteurId)
                 .stream()
                 .map(this::mapToResponseDto)
@@ -314,7 +314,7 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
 
     @Override
     @Transactional
-    public DemandeCreditResponseDto startInstruction(Long demandeId, Long actorId) {
+    public DemandeCreditResponseDto startInstruction(Long demandeId, String actorId) {
         DemandeCredit demande = findDemandeOrThrow(demandeId);
         validateTransition(demande.getStatut(), StatutDemande.EN_COURS_INSTRUCTION);
         demande.setStatut(StatutDemande.EN_COURS_INSTRUCTION);
@@ -341,7 +341,7 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
 
     @Override
     @Transactional
-    public DemandeCreditResponseDto archiveDemande(Long demandeId, Long actorId) {
+    public DemandeCreditResponseDto archiveDemande(Long demandeId, String actorId) {
         DemandeCredit demande = findDemandeOrThrow(demandeId);
         validateTransition(demande.getStatut(), StatutDemande.ARCHIVEE);
         demande.setStatut(StatutDemande.ARCHIVEE);
@@ -353,7 +353,7 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
 
     @Override
     @Transactional
-    public DemandeCreditResponseDto cancelDemande(Long demandeId, Long actorId) {
+    public DemandeCreditResponseDto cancelDemande(Long demandeId, String actorId) {
         DemandeCredit demande = findDemandeOrThrow(demandeId);
         validateTransition(demande.getStatut(), StatutDemande.ANNULEE);
         demande.setStatut(StatutDemande.ANNULEE);
@@ -411,23 +411,21 @@ public class DemandeCreditServiceImpl implements IDemandeCreditService {
                 .build();
     }
 
-    private Long getCurrentUserId() {
+    private String getCurrentUserId() {
         org.springframework.security.core.Authentication auth =
                 org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) {
-            return 0L;
+            return null;
         }
         Object principal = auth.getPrincipal();
 
         if (principal instanceof String s) {
-            try {
-                return Long.parseLong(s);
-            } catch (NumberFormatException ignored) {
-                return 0L;
-            }
+            return s;
         }
-        // Avoid calling toString() on JPA entities from security context (can trigger lazy loading).
-        return 0L;
+        if (principal instanceof tn.esprit.agri.entities.User u) {
+            return u.getId();
+        }
+        return null;
     }
 
     private void validateTransition(StatutDemande from, StatutDemande to) {

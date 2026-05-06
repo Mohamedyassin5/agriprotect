@@ -34,6 +34,5 @@ public class QcmQuestion {
     private List<String> options = new ArrayList<>();
 
     @Column(nullable = false)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // admin can send, farmer cannot see it
     private String correctAnswer;
 }

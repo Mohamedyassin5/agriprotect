@@ -20,7 +20,7 @@ public interface IDemandeCreditService {
 
     DemandeCreditResponseDto getDemandeById(Long id);
 
-    List<DemandeCreditResponseDto> getDemandesByAgriculteur(Long agriculteurId);
+    List<DemandeCreditResponseDto> getDemandesByAgriculteur(String agriculteurId);
 
     List<DemandeCreditResponseDto> getDemandesEnCours();
 
@@ -43,13 +43,13 @@ public interface IDemandeCreditService {
 
     CreditResponseDto getCreditById(Long creditId);
 
-    DemandeCreditResponseDto startInstruction(Long demandeId, Long actorId);
+    DemandeCreditResponseDto startInstruction(Long demandeId, String actorId);
 
     DemandeCreditResponseDto finaliserDecision(Long demandeId, DecisionFinaleDto dto);
 
-    DemandeCreditResponseDto archiveDemande(Long demandeId, Long actorId);
+    DemandeCreditResponseDto archiveDemande(Long demandeId, String actorId);
 
-    DemandeCreditResponseDto cancelDemande(Long demandeId, Long actorId);
+    DemandeCreditResponseDto cancelDemande(Long demandeId, String actorId);
 
     CreditScoringDto scoreDemande(Long demandeId);
 

@@ -31,6 +31,6 @@ public class AuditLog {
     private String beforeState;
     @Column(columnDefinition = "TEXT")
     private String afterState;
-    private Long actorId;
+    private String actorId;
     private LocalDateTime createdAt;
 }

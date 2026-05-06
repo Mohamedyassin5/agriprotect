@@ -26,22 +26,25 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     Optional<Budget> findByIdAndUserId(Long id, String userId);
 
-    @Query("SELECT b FROM Budget b WHERE b.user.id = :userId " +
-           "AND b.periodStart <= :date AND b.periodEnd >= :date " +
-           "AND (:category IS NULL OR b.category = :category)")
-    List<Budget> findActiveBudgets(@Param("userId") String userId,
-                                  @Param("date") LocalDate date,
-                                  @Param("category") EntryCategory category);
+    boolean existsByUserIdAndCategoryAndPeriodStartAndPeriodEnd(
+            String userId, EntryCategory category, LocalDate periodStart, LocalDate periodEnd);
 
     @Query("SELECT b FROM Budget b WHERE b.user.id = :userId " +
-           "AND (:periodType IS NULL OR b.periodType = :periodType) " +
-           "AND (:category IS NULL OR b.category = :category) " +
-           "AND (:startDate IS NULL OR b.periodStart >= :startDate) " +
-           "AND (:endDate IS NULL OR b.periodEnd <= :endDate)")
+            "AND b.periodStart <= :date AND b.periodEnd >= :date " +
+            "AND (:category IS NULL OR b.category = :category)")
+    List<Budget> findActiveBudgets(@Param("userId") String userId,
+                                   @Param("date") LocalDate date,
+                                   @Param("category") EntryCategory category);
+
+    @Query("SELECT b FROM Budget b WHERE b.user.id = :userId " +
+            "AND (:periodType IS NULL OR b.periodType = :periodType) " +
+            "AND (:category IS NULL OR b.category = :category) " +
+            "AND (:startDate IS NULL OR b.periodStart >= :startDate) " +
+            "AND (:endDate IS NULL OR b.periodEnd <= :endDate)")
     Page<Budget> findByFilters(@Param("userId") String userId,
-                              @Param("periodType") BudgetPeriodType periodType,
-                              @Param("category") EntryCategory category,
-                              @Param("startDate") LocalDate startDate,
-                              @Param("endDate") LocalDate endDate,
-                              Pageable pageable);
+                               @Param("periodType") BudgetPeriodType periodType,
+                               @Param("category") EntryCategory category,
+                               @Param("startDate") LocalDate startDate,
+                               @Param("endDate") LocalDate endDate,
+                               Pageable pageable);
 }

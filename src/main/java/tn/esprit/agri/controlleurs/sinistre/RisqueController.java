@@ -36,6 +36,7 @@ public class RisqueController {
     private final RisqueRepository risqueRepository;
     private final CropRepository cropRepository;
     private final UserRepository userRepository;
+    private final tn.esprit.agri.services.EmailService emailService;
 
     /**
      * Déclencher la détection des risques pour une culture spécifique
@@ -137,9 +138,11 @@ public class RisqueController {
             riskDetectionService.resolveSinistre(risqueId);
             Risque resolved = risqueRepository.findById(risqueId)
                     .orElseThrow(() -> new RuntimeException("Risque not found"));
+
             return ResponseEntity.ok(toResponse(resolved));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            log.error("Erreur lors de la résolution du risque : ", e);
+            return ResponseEntity.badRequest().build();
         }
     }
 

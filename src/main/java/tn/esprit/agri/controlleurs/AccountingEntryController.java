@@ -43,13 +43,16 @@ public class AccountingEntryController {
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(required = false) EntryType type,
-            @RequestParam(required = false) EntryCategory category,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        EntryType entryType = EntryType.fromString(type);
+        EntryCategory entryCategory = EntryCategory.fromString(category);
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("entryDate").descending());
-        Page<EntryResponse> response = entryService.getEntries(user.getId(), type, category, from, to, pageable);
+        Page<EntryResponse> response = entryService.getEntries(user.getId(), entryType, entryCategory, from, to, pageable);
 
         return ResponseEntity.ok(response);
     }

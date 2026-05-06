@@ -39,7 +39,7 @@ public class AnalyseRentabilite {
     @JoinColumn(name = "demande_credit_id", nullable = false)
     private DemandeCredit demandeCredit;
 
-    private Long analysteId;
+    private String analysteId;
 
     private Double scoreRevenueStability;
     private Double scoreDebtRatio;

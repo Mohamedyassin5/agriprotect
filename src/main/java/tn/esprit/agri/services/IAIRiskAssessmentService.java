@@ -8,11 +8,12 @@ import java.util.Map;
 
 public interface IAIRiskAssessmentService {
 
-    // Version avec ID utilisateur
+
     AICompleteEstimationResult calculateCompleteEstimation(String userId, CoverageType coverType);
 
     // Gardez l'ancienne méthode si nécessaire
-    AIRiskAssessmentResult assessRisk(String userId, CoverageType coverType);
+    AIRiskAssessmentResult assessRisk(String userId, CoverageType coverType,
+                                      double environmentalRisk, int userScore);
 
     record AIRiskAssessmentResult(
             double riskScore,

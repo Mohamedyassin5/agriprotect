@@ -15,6 +15,8 @@ import tn.esprit.agri.entities.enums.TypeSinistre;
 import tn.esprit.agri.repositories.CropRepository;
 import tn.esprit.agri.repositories.SinistreRepository;
 import tn.esprit.agri.repositories.UserRepository;
+import tn.esprit.agri.repositories.RisqueRepository;
+import tn.esprit.agri.entities.Risque;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +35,7 @@ public class SinistreService {
     private final SinistreRepository sinistreRepository;
     private final CropRepository cropRepository;
     private final UserRepository userRepository;
+    private final RisqueRepository risqueRepository;
     private final VisionAiService visionAiService;
     private final ObjectMapper objectMapper;
 
@@ -66,20 +69,55 @@ public class SinistreService {
                 String aiResult = visionAiService.analyzeSinistreImage(image.getBytes(), image.getContentType());
 
                 JsonNode root = objectMapper.readTree(aiResult);
-                
+
                 String typeStr = root.path("type").asText("AUTRE");
-                float quota = (float) root.path("quota").asDouble(0.0);
+                float aiQuota = (float) root.path("quota").asDouble(0.0);
                 String aiDescription = root.path("description").asText("");
 
-                sinistre.setTypeSinistre(TypeSinistre.valueOf(typeStr));
-                sinistre.setQuotaRemboursement(quota);
-                if (aiDescription != null && !aiDescription.isBlank()) {
-                    sinistre.setDescription((sinistre.getDescription() != null ? sinistre.getDescription() + "\n\n" : "") + "Analyse IA : " + aiDescription);
+                // ==========================================
+                // LOUAY'S QUOTA CALCULATION LOGIC
+                // ==========================================
+                List<Risque> cropRisks = risqueRepository.findByCropId(cropId);
+                float riskFactor = 1.0f;
+
+                if (cropRisks != null && !cropRisks.isEmpty()) {
+                    float totalRiskValue = 0f;
+                    for (Risque r : cropRisks) {
+                        if (r.getSeverity() == tn.esprit.agri.entities.enums.Severity.HIGH) {
+                            totalRiskValue += 1.5f;
+                        } else if (r.getSeverity() == tn.esprit.agri.entities.enums.Severity.MEDIUM) {
+                            totalRiskValue += 1.2f;
+                        } else if (r.getSeverity() == tn.esprit.agri.entities.enums.Severity.LOW) {
+                            totalRiskValue += 1.0f;
+                        }
+                    }
+                    riskFactor = totalRiskValue / cropRisks.size();
                 }
-                
-                if (quota > 0) {
-                    sinistre.setStatut(StatutSinistre.VALIDE); // Auto-validation si quota > 0? Ou garder EN_ATTENTE?
-                    // Mettons VALIDE si l'IA confirme un sinistre
+
+                float surfaceFactor = 1.0f;
+                if (crop.getSurface() != null && crop.getSurface() > 0) {
+                    // Small bonus based on surface size (e.g. +1% per hectare)
+                    surfaceFactor = 1.0f + (crop.getSurface().floatValue() * 0.01f);
+                }
+
+                // Final Quota combined
+                float finalQuota = aiQuota * riskFactor * surfaceFactor;
+                // Cap the quota at 1.0 (100%)
+                finalQuota = Math.min(finalQuota, 1.0f);
+                // ==========================================
+
+                sinistre.setTypeSinistre(TypeSinistre.valueOf(typeStr));
+                sinistre.setQuotaRemboursement(finalQuota);
+
+                if (aiDescription != null && !aiDescription.isBlank()) {
+                    sinistre.setDescription((sinistre.getDescription() != null ? sinistre.getDescription() + "\n\n" : "") +
+                            "Analyse IA : " + aiDescription +
+                            String.format("\n[Détails Calcul : Quota IA=%.2f, Facteur Risque=%.2f, Facteur Surface=%.2f, Quota Final=%.2f]",
+                                    aiQuota, riskFactor, surfaceFactor, finalQuota));
+                }
+
+                if (finalQuota > 0) {
+                    sinistre.setStatut(StatutSinistre.VALIDE); // Auto-validation si quota > 0
                 }
             } catch (Exception e) {
                 log.error("AI Analysis failed for sinistre: ", e);
@@ -113,6 +151,17 @@ public class SinistreService {
             s.setResolvedAt(LocalDateTime.now());
             s.setStatut(StatutSinistre.RESOLU);
             sinistreRepository.save(s);
+
+            try {
+                tn.esprit.agri.services.EmailService emailService = org.springframework.web.context.support.WebApplicationContextUtils
+                        .getRequiredWebApplicationContext(
+                                ((org.springframework.web.context.request.ServletRequestAttributes)
+                                        org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()).getRequest().getServletContext()
+                        ).getBean(tn.esprit.agri.services.EmailService.class);
+                emailService.sendSinistreResolvedEmail(s);
+            } catch (Exception e) {
+                log.error("Failed to send sinistre email", e);
+            }
         });
     }
 

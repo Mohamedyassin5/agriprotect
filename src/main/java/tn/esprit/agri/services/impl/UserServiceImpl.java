@@ -136,6 +136,18 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public Optional<User> updateStatus(String id, String status) {
+        return userRepository.findById(id).map(user -> {
+            try {
+                user.setStatus(tn.esprit.agri.entities.enums.Status.valueOf(status.toUpperCase()));
+                return userRepository.save(user);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid status: " + status);
+            }
+        });
+    }
+
+    @Override
     public void changePassword(String email, String oldPassword, String newPassword) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));

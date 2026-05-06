@@ -15,7 +15,7 @@ public class CreditResponseDto {
     private LocalDate dateDebut;
     private LocalDate dateFin;
     private StatutCredit statut;
-    private Long agriculteurId;
+    private String agriculteurId;
     private Long demandeCreditId;
     private Long assuranceId;
     private String referenceContrat;

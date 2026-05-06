@@ -31,10 +31,11 @@ public class Crop {
     private LocalDate startDate;
     private LocalDate endDate;
     private String typeterres;
+    private Double estimatedValue;
     private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonBackReference
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"crops", "password", "faceRefImage"})
     private User user;
 }

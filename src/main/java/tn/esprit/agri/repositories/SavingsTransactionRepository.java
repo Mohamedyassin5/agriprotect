@@ -24,21 +24,21 @@ public interface SavingsTransactionRepository extends JpaRepository<SavingsTrans
     Optional<SavingsTransaction> findByIdAndAccountId(Long id, Long accountId);
 
     @Query("SELECT st FROM SavingsTransaction st WHERE st.account.id = :accountId " +
-           "AND (:type IS NULL OR st.type = :type) " +
-           "AND (:startDate IS NULL OR st.occurredAt >= :startDate) " +
-           "AND (:endDate IS NULL OR st.occurredAt <= :endDate)")
+            "AND (:type IS NULL OR st.type = :type) " +
+            "AND (:startDate IS NULL OR st.occurredAt >= :startDate) " +
+            "AND (:endDate IS NULL OR st.occurredAt <= :endDate)")
     Page<SavingsTransaction> findByFilters(@Param("accountId") Long accountId,
-                                          @Param("type") SavingsTransactionType type,
-                                          @Param("startDate") LocalDateTime startDate,
-                                          @Param("endDate") LocalDateTime endDate,
-                                          Pageable pageable);
+                                           @Param("type") SavingsTransactionType type,
+                                           @Param("startDate") LocalDateTime startDate,
+                                           @Param("endDate") LocalDateTime endDate,
+                                           Pageable pageable);
 
     // --- AI Feature queries ---
     @Query("SELECT COALESCE(SUM(st.amount), 0) FROM SavingsTransaction st WHERE st.account.id = :accountId AND st.type = :type AND st.occurredAt BETWEEN :start AND :end")
     java.math.BigDecimal sumAmountByAccountIdAndTypeAndDateRange(@Param("accountId") Long accountId,
-                                                                  @Param("type") SavingsTransactionType type,
-                                                                  @Param("start") LocalDateTime start,
-                                                                  @Param("end") LocalDateTime end);
+                                                                 @Param("type") SavingsTransactionType type,
+                                                                 @Param("start") LocalDateTime start,
+                                                                 @Param("end") LocalDateTime end);
 
     @Query("SELECT COUNT(st) FROM SavingsTransaction st WHERE st.account.id = :accountId AND st.type = :type AND st.occurredAt BETWEEN :start AND :end")
     Long countByAccountIdAndTypeAndDateRange(@Param("accountId") Long accountId,

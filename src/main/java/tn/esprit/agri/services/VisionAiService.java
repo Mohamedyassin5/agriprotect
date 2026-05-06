@@ -21,7 +21,7 @@ public class VisionAiService {
 
     private final WebClient webClient;
 
-    @Value("${groq.api.vision-model:meta-llama/llama-4-scout-17b-16e-instruct}")
+    @Value("${groq.api.vision-model:llama-3.2-11b-vision-preview}")
     private String visionModel;
 
 
@@ -42,7 +42,7 @@ public class VisionAiService {
 
     public String analyzeSinistreImage(byte[] imageBytes, String contentType) {
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        
+
         // Détecter le type MIME (par défaut image/jpeg)
         String mimeType = (contentType != null && !contentType.isBlank()) ? contentType : "image/jpeg";
         String dataUrl = "data:" + mimeType + ";base64," + base64Image;
@@ -75,7 +75,7 @@ public class VisionAiService {
         try {
             GroqResponse1 response = webClient
                     .post()
-                    .uri("/chat/completions") // No leading slash to append to baseUrl properly
+                    .uri("chat/completions") // Relative to baseUrl /openai/v1
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(GroqResponse1.class)

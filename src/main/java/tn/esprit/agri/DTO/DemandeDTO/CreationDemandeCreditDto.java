@@ -16,8 +16,7 @@ public class CreationDemandeCreditDto {
     private LocalDate dateDemande;
 
     @NotNull(message = "L'agriculteur est obligatoire")
-    @Min(1)
-    private Long agriculteurId;
+    private String agriculteurId;
 
     @NotNull(message = "Le montant demandé est obligatoire")
     @Positive(message = "Le montant doit être positif")

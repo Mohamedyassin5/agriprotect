@@ -26,6 +26,7 @@ public class SinistreController {
 
     private final SinistreService sinistreService;
     private final UserRepository userRepository;
+    private final tn.esprit.agri.services.EmailService emailService;
 
     @PostMapping(value = "/declare", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SinistreResponse> declareSinistre(
@@ -38,7 +39,7 @@ public class SinistreController {
         try {
             User user = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+
             Sinistre sinistre = sinistreService.declareSinistre(user.getId(), cropId, dateCatastrophe, image, description);
             return ResponseEntity.ok(toResponse(sinistre));
         } catch (Exception e) {
@@ -51,7 +52,7 @@ public class SinistreController {
     public ResponseEntity<List<SinistreResponse>> getMySinistres(Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         return ResponseEntity.ok(
                 sinistreService.getMySinistres(user.getId())
                         .stream()
@@ -64,11 +65,23 @@ public class SinistreController {
     public ResponseEntity<SinistreResponse> resolveSinistre(@PathVariable String id) {
         try {
             sinistreService.resolveSinistre(id);
-            return ResponseEntity.ok(toResponse(sinistreService.getById(id)));
+            Sinistre resolved = sinistreService.getById(id);
+            return ResponseEntity.ok(toResponse(resolved));
         } catch (Exception e) {
             log.error("Error resolving sinistre: ", e);
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/unresolved/all")
+    public ResponseEntity<List<SinistreResponse>> getUnresolvedSinistres() {
+        return ResponseEntity.ok(
+                sinistreService.getMySinistres(null)
+                        .stream()
+                        .filter(s -> !Boolean.TRUE.equals(s.getIsResolved()))
+                        .map(this::toResponse)
+                        .collect(Collectors.toList())
+        );
     }
 
 

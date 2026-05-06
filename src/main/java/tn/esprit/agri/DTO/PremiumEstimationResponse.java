@@ -11,6 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PremiumEstimationResponse {
+    private String recommendationReason;
 
     private BigDecimal totalPremium;
     private Map<String, FormulaDetail> detailsByFormula;

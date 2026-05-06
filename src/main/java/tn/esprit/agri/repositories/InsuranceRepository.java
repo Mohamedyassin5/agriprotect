@@ -21,10 +21,10 @@ public interface InsuranceRepository extends JpaRepository<Insurance, String> {
     List<Insurance> findByStatusIn(List<InsuranceStatus> statuses);
     // Compter toutes les polices actives, overdue, etc.
     long countByStatusIn(List<InsuranceStatus> statuses);
-
+    List<Insurance> findByUserId(String userId);
     // Trouver les polices en retard ou suspendues
     List<Insurance> findByStatusInOrderByNextPaymentDueAsc(List<InsuranceStatus> statuses);
-
+    Optional<Insurance> findTopByUserIdAndStatus(String userId, InsuranceStatus status);
     // Optionnel : polices par utilisateur (pour le farmer)
     List<Insurance> findByUserIdOrderByCreatedAtDesc(String userId);
 
